@@ -87,13 +87,27 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: center;   /* 縦長の画面（スマホ縦）は中央を表示 */
+      object-fit: cover;         /* 縦長の画面（スマホ縦）は画面いっぱいに表示 */
+      object-position: center;
     }
-    /* 横長の画面（PC・スマホ横向き）：キャラクターの顔が映る高さに自動調整します。
-       正確な位置はJavaScript（HERO_FOCUS_Y）が計算します。下はJSが動くまでの仮の値です */
+
+    /* 横長の画面（PC・スマホ横向き）：
+       ① メイン画像は切り取らず、元の縦長のまま中央に表示（contain）
+       ② 左右の空いたところには、同じ画像をぼかして拡大した背景（.hero__bg-blur）を敷く */
+    .hero__bg-blur {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      filter: blur(28px) brightness(0.85);   /* ぼかしの強さ・明るさはここで調整 */
+      transform: scale(1.15);                /* ぼかした縁が見えないよう少し拡大 */
+    }
     @media (min-aspect-ratio: 1 / 1) {
-      .hero__bg { object-position: center 22%; }
+      .hero__bg { object-fit: contain; }
+      .hero__bg-blur { display: block; }
     }
 
     .hero__content {
@@ -459,7 +473,10 @@
     <!-- ▼▼▼ 背景画像 ▼▼▼
          images/hero.jpg（または .png / .webp）を置くと自動で表示されます。
          画像が無いときは仮画像（Unsplash）が表示されます。
+         ・heroBlur = 横長画面の左右を埋める「ぼかして拡大した背景」（同じ画像を自動で使用）
+         ・heroImg  = メイン画像（横長画面では元の縦横比のまま中央に表示）
          ※src と alt は下の <script> が自動で設定します -->
+    <img class="hero__bg-blur" id="heroBlur" alt="" aria-hidden="true">
     <img class="hero__bg" id="heroImg" alt="">
     <!-- ▲▲▲ 背景画像ここまで ▲▲▲ -->
 
@@ -671,9 +688,6 @@
     ================================================== */
     const IMAGE_FOLDER = "images";
     const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];   // 探す拡張子（順番に試します）
-    /* 横長画面で「画像の縦方向のどこ」を画面の中心にするか（0 = 画像の一番上 〜 1 = 一番下）。
-       今のメイン画像は、2体のキャラの顔の中間あたりが約0.37。画像を変えたら調整してください */
-    const HERO_FOCUS_Y = 0.37;
     const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
     const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
 
@@ -1091,34 +1105,21 @@
     mapViewport.addEventListener("pointerup", mapEndDrag);
     mapViewport.addEventListener("pointercancel", mapEndDrag);
 
-    // ---------- ヒーロー画像の見せる位置（横長画面で顔が映るように） ----------
-    // 画面の縦横比に合わせて、HERO_FOCUS_Y の高さが画面の中心に来るよう object-position を計算します
-    function updateHeroFocus() {
-      const img = document.getElementById("heroImg");
-      const cw = window.innerWidth, ch = window.innerHeight;
-      if (!img.naturalWidth) return;
-      if (cw < ch) { img.style.objectPosition = "center"; return; }      // 縦長画面は中央
-      const scaledH = img.naturalHeight * Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
-      const visible = ch / scaledH;                                      // 画像のうち縦に何割が映るか
-      if (visible >= 1) { img.style.objectPosition = "center"; return; }
-      const p = Math.min(1, Math.max(0, (HERO_FOCUS_Y - visible / 2) / (1 - visible)));
-      img.style.objectPosition = "center " + (p * 100).toFixed(1) + "%";
-    }
-    window.addEventListener("resize", updateHeroFocus);
-
     // ---------- 画像の準備 → 表示の組み立て ----------
     // ① ヒーロー画像を先に読み込み、完了してから文字の演出を開始（文字だけ先に動かない）
     resolveHero().then((heroSrc) => {
       const heroImg = document.getElementById("heroImg");
+      const heroBlur = document.getElementById("heroBlur");   // 左右を埋めるぼかし背景
       let usedFallback = false;
-      heroImg.onload = () => { updateHeroFocus(); startHeroAnimation(); };
+      heroImg.onload = startHeroAnimation;
       heroImg.onerror = () => {
-        if (!usedFallback) { usedFallback = true; heroImg.src = HERO_FALLBACK; }  // 失敗したら仮画像で再挑戦
+        if (!usedFallback) { usedFallback = true; heroImg.src = HERO_FALLBACK; heroBlur.src = HERO_FALLBACK; }  // 失敗したら仮画像で再挑戦
         else startHeroAnimation();                                                 // それでも駄目でも演出は始める
       };
       heroImg.alt = "文化祭メイン画像";
+      heroBlur.src = heroSrc;
       heroImg.src = heroSrc;
-      if (heroImg.complete && heroImg.naturalWidth) { updateHeroFocus(); startHeroAnimation(); } // キャッシュ済みの場合
+      if (heroImg.complete && heroImg.naturalWidth) startHeroAnimation();          // キャッシュ済みの場合
     });
     setTimeout(() => startHeroAnimation(), 8000);   // 通信が極端に遅くても、8秒後には演出を始める保険
 
