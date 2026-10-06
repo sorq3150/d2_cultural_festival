@@ -395,6 +395,39 @@
     }
 
     /* スマホ表示（JS側の MOBILE_MAX_WIDTH と同じ値にしてください） */
+    /* ==================================================
+       団体の詳細ポップアップ
+    ================================================== */
+    .card { cursor: pointer; }
+    .carousel__viewport .card { cursor: inherit; }   /* カルーセル内はドラッグ用の手のカーソル */
+    .modal--detail { z-index: 110; }                  /* 一覧モーダルより手前に出す */
+    .detail__panel { width: min(760px, 100%); }
+    .detail__sub {
+      margin: -0.4rem 0 0 calc(3px + 0.8rem);
+      color: var(--sakura);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      line-height: 1.6;
+    }
+    .detail__text {
+      margin-top: 1.4rem;
+      font-size: 1.05rem;
+      line-height: 2;
+      letter-spacing: 0.04em;
+      font-weight: 400;
+    }
+    .detail__img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      max-height: 70vh;
+      margin-top: 1.6rem;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      object-fit: cover;
+      background: #333;
+    }
+
     @media (max-width: 767px) {
       :root { --gap: 10px; }
     }
@@ -478,6 +511,23 @@
     </div>
   </div>
 
+  <!-- ==================================================
+       4. 団体の詳細ポップアップ（カードをクリックすると開きます）
+          並び順：団体名 → 企画名 → 紹介文 → 画像（画像は紹介文の下）
+          ※中身はJavaScriptが入れます。順番を変えたいときはこの中の並びを入れ替えてください
+  ================================================== -->
+  <div class="modal modal--detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal__panel detail__panel">
+      <div class="modal__head">
+        <h2 class="modal__title" id="detailTitle"></h2>
+        <button class="modal__close" id="detailClose" type="button" aria-label="閉じる">✕</button>
+      </div>
+      <p class="detail__sub" id="detailSub"></p>
+      <p class="detail__text" id="detailText"></p>
+      <img class="detail__img" id="detailImg" alt="">
+    </div>
+  </div>
+
   <script>
     /* ==================================================
        ★★★ データ設定（ここを編集すると表示内容が変わります） ★★★
@@ -487,7 +537,14 @@
            例）食バザーの2年2組 → images/food/2-2.jpg
            （.jpg .jpeg .png .webp に対応／見つからなければ仮画像）
          ※img にURLを書くと、そちらが優先されます。 例）img: "https://…/photo.jpg"
-       ■ 団体の追加：items の中に { name: "団体名", file: "半角英数のファイル名", img: "" } を1行足す
+         ※この画像は、カードの背景と、詳細ポップアップの下部（紹介文の下）に使われます。
+       ■ 各団体のデータの意味：
+           name  = カードに表示する団体名
+           file  = 画像のファイル名（半角英数。images/カテゴリid/file.jpg）
+           title = 企画名（詳細ポップアップの見出し下に表示。不要なら "" ）
+           text  = 紹介文（詳細ポップアップの中ほどに表示）
+           img   = 画像URLを直接指定したいときだけ（通常は "" のまま）
+       ■ 団体の追加：items の中に { name: "団体名", file: "半角英数", title: "企画名", text: "紹介文", img: "" } を1行足す
        ■ カテゴリ（5つ目以降）の追加：下の配列の最後に
            { id: "xxx", title: "カテゴリ名", items: [ ... ] },
          をコピーして足すだけで、見出し・スライダー・「すべて表示」が自動で作られます。
@@ -497,47 +554,77 @@
         id: "food",
         title: "食バザー",
         items: [
-          // ▼ 食バザーの画像差し替え箇所
-          { name: "2年2組", file: "2-2", img: "" },
-          { name: "2年4組", file: "2-4", img: "" },
-          { name: "2年5組", file: "2-5", img: "" },
-          { name: "2年6組", file: "2-6", img: "" },
-          { name: "2年8組", file: "2-8", img: "" },
-          { name: "2年S組", file: "2-S", img: "" }
+          // ▼ 食バザーの画像差し替え箇所（images/food/ファイル名.jpg を置くと自動表示）
+          { name: "2年2組", file: "2-2", title: "ミキおばさんのポップコーンマシーンとマサユキおじさんのかき氷", text: "「いいかい。ポップコーンやかき氷を作るとき一番大切なのは、作る技術じゃないんだよ。それを誰かの為に作ろうっていう気持ちなんだよ。」", img: "" },
+          { name: "2年4組", file: "2-4", title: "チョコッとよってかない？チョコバナナ学園", text: "2年4組は、お祭りの定番チョコバナナを販売します！冷凍のまま販売するため、ひんやり新鮮なものを提供できます。とてもおいしいので、ぜひ来てみてください！", img: "" },
+          { name: "2年5組", file: "2-5", title: "FUMINORI’S DINER 25", text: "ここはネオンが輝きしレコードから音楽が流れるアメリカンダイナー。熱々のたこ焼きと焼きそばを味わいながら映画のワンシーンのようなひと時をお楽しみください。", img: "" },
+          { name: "2年6組", file: "2-6", title: "タンフルはやべえだろ", text: "2-6ではいちごとマスカットのフルーツ飴を販売します。教室はラブ上等の雰囲気なので、ぜひフルーツ飴を買いに来てください！", img: "" },
+          { name: "2年8組", file: "2-8", title: "グランメゾン リカ", text: "私たち2年8組は「グランメゾン東京」をモチーフに二高生やお客様からの三つ星をいただくためにたくさんの話し合いを重ねてきました。Bon appétit!!", img: "" },
+          { name: "2年S組", file: "2-S", title: "寺田屋（おぬしも甘いのう）", text: "あのPowersがパワーアップして帰ってくる！と思ったら今度はパンケーキ！？そして寺田屋とは？なんか怪しい雰囲気出てるけど・・・やばくねーよ☆", img: "" }
         ]
       },
       {
         id: "exhibit",
         title: "展示",
         items: [
-          // ▼ 展示の画像差し替え箇所
-          { name: "1年1組", file: "1-1", img: "" },
-          { name: "1年2組", file: "1-2", img: "" },
-          { name: "1年3組", file: "1-3", img: "" },
-          { name: "美術部", file: "art", img: "" },
-          { name: "写真部", file: "photo", img: "" }
+          // ▼ 展示の画像差し替え箇所（images/exhibit/ファイル名.jpg を置くと自動表示）
+          { name: "1年1組", file: "1-1", title: "ゴールできたらハイチーズ！ハロウィン教室でスクリーム！", text: "一足早く第二にハロウィン到来！絶叫必須のおばけ屋敷と最高の思い出を残せるフォトスポットが誕生！新体験の恐怖と楽しさをあなたに。", img: "" },
+          { name: "1年2組", file: "1-2", title: "ドキドキハラハラ格付けチェック", text: "あなたの感覚は一流？二流？様々な格付けチェックで見て聞いて、真贋を見抜け！挑戦後はお菓子やフォトスポットを用意しています。", img: "" },
+          { name: "1年4組", file: "1-4", title: "HOLLYWOOD体験", text: "あなたもハリウッドスターになってみませんか？１年４組ではレッドカーペットの上を歩きハリウッドスターの気分を味わうことができます。ぜひおこし下さい！", img: "" },
+          { name: "1年6組", file: "1-6", title: "神秘的な教室", text: "プラネタリウムとフォトスポットを合わせた僕たちの最高傑作です。輝いている第二の中で美しく広がる神秘的な世界。どうぞ立ち寄ってみてください。", img: "" },
+          { name: "1年7組", file: "1-7", title: "ミニスポッチャ", text: "お好み焼きのような個性豊かなメンバーが混ざり合い、最高に楽しくて面白い特設スポッチャが完成！笑顔あふれる熱々の空間へ、みんなで一緒に遊びに来てね！", img: "" },
+          { name: "1年A組", file: "1-A", title: "笑神竜神図屏風", text: "伝承華というテーマから、二高60周年記念キャラの竜くんとニコちゃんを風神雷神に見立て、肥後六花と描きました。竜胆も描かれているので探してみてください。", img: "" },
+          { name: "2年1組", file: "2-1", title: "VSくっしー", text: "あの人気番組を文化祭で再現！？さまざまなゲームに挑戦すると景品がもらえます！最高点を取ることができるのは果たして誰なのか。ぜひお越しください！！", img: "" },
+          { name: "2年A組", file: "2-A", title: "ニノエ美術館 第二展示室", text: "【緊急募集】ニノエ美術館、第二展示室の警備員を募集しています！作品の状態を確認するだけの簡単なお仕事！※命の保証はできかねます。", img: "" }
         ]
       },
       {
         id: "stage",
         title: "ステージ / 有志",
         items: [
-          // ▼ ステージ/有志の画像差し替え箇所
-          { name: "有志バンド", file: "band", img: "" },
-          { name: "ダンス部", file: "dance-club", img: "" },
-          { name: "演劇部", file: "drama", img: "" },
-          { name: "有志ダンス", file: "dance-yushi", img: "" }
+          // ▼ ステージ / 有志の画像差し替え箇所（images/stage/ファイル名.jpg を置くと自動表示）
+          { name: "1年3組", file: "1-3", title: "We’re team Takuji!", text: "１年３組は、私たちの良さである明るさ、元気、おもしろさをいかした個性あふれるダンスをおどります。絶対面白くて魅力的で楽しいのでぜひ来てください！！", img: "" },
+          { name: "1年5組", file: "1-5", title: "廃部寸前！？探偵部と１００万円の花瓶", text: "ある高校の探偵部。突然彼らに廃部が言い渡される！？事件を解決すれば廃部を阻止できるらしい！真犯人は一体誰だ？コメディ×ミステリーの痛快劇！！乞うご期待！！", img: "" },
+          { name: "1年8組", file: "1-8", title: "赤点回避 プリキュア", text: "いつも通りのテスト返却のはずだった。赤点をとった生徒たちは絶望しゾンビ化！そこに現れたのはまさかのプリキュア！みんなでプリキュアを応援しよう！", img: "" },
+          { name: "1年S組", file: "1-S", title: "1年S組オンステージ", text: "完全オリジナルストーリーでおくるギャグホラーステージ。夜の学校に閉じ込められた主人公たち。最後にどんでん返しが！！細部まで見逃すな！！！！！！", img: "" },
+          { name: "2年3組", file: "2-3", title: "兎と亀", text: "昔々、兎と亀がそれぞれ徒党を組んでおった。両者はお互いに嫌い合っていたそうな。ある年、不作に見舞われ、飢饉に陥ってしまった。これは、そのときのお話。", img: "" },
+          { name: "2年7組", file: "2-7", title: "イケダ探し", text: "何者かに襲われた池田先生をアイテムを集めて助けよう！※この作品は映画ちいかわのパロディです。楽しく見たい人は映画ちいかわの予習をしておいてね！", img: "" },
+          { name: "GROWS", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！GROWSです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", img: "" },
+          { name: "金木犀", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", img: "" },
+          { name: "SONMINS", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", img: "" },
+          { name: "24時30分", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", img: "" },
+          { name: "GIRLS", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", img: "" },
+          { name: "かにクラブ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", img: "" },
+          { name: "ロングヘア", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", img: "" },
+          { name: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", img: "" },
+          { name: "ニコLOVE", file: "nico-love", title: "ダンス", text: "私たちはかわいいかわいいアイドルソングを5曲披露します。かわいい振り付けや衣装に注目してくださると嬉しいです。全員で一緒に盛り上がりましょう！", img: "" },
+          { name: "個人ピアノ演奏", file: "piano", title: "", text: "ラヴェルのピアノ曲集「鏡」に収められた二曲です。「蛾」は繊細な音の動き、「道化師の朝の歌」はスペイン風の情熱的な旋律が魅力です。ぜひお聞きください。", img: "" }
         ]
       },
       {
         id: "club",
         title: "部活動",
         items: [
-          // ▼ 部活動の画像差し替え箇所
-          { name: "吹奏楽部", file: "brass", img: "" },
-          { name: "書道部", file: "calligraphy", img: "" },
-          { name: "茶道部", file: "tea", img: "" },
-          { name: "華道部", file: "flower", img: "" }
+          // ▼ 部活動の画像差し替え箇所（images/club/ファイル名.jpg を置くと自動表示）
+          { name: "化学部", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", img: "" },
+          { name: "物理部", file: "physics", title: "実験器具展示・自作コースターの配布", text: "物理室ではお馴染みの実験器具はもちろん、少し変わった装置を展示しています。物理学に興味がある人も、そうでない人もぜひ気軽にお越しください！", img: "" },
+          { name: "生物部", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", img: "" },
+          { name: "地学部", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", img: "" },
+          { name: "写真部", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", img: "" },
+          { name: "普通科美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
+          { name: "美術科美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
+          { name: "茶道部", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", img: "" },
+          { name: "英語部", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", img: "" },
+          { name: "書道部", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", img: "" },
+          { name: "調理同好会", file: "cooking", title: "ブルッキーの販売", text: "ブルッキーはブラウニーとクッキーを組み合わせたお菓子です。チョコの濃厚な味わいと食感が楽しめます。ぜひ一度、味わって見てください！", img: "" },
+          { name: "放送部", file: "broadcast", title: "観て！聴いて！放送部作品 selection", text: "第二高校放送部です。私たちが過去制作してきた、テレビ・ラジオ媒体での７～８分の番組を一挙公開！飲食がてら休憩がてら、私たちの歩みの証をご覧ください！", img: "" },
+          { name: "家庭クラブ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", img: "" },
+          { name: "図書委員会", file: "library", title: "好きを語ろう 私の“推し”本パネル展", text: "「好き」を語らせて！図書委員が厳選した「推し本」の魅力を、各自１枚の特大パネルに凝縮してご紹介します。あなたも運命の「推し本」に出会えるかも！？", img: "" },
+          { name: "書道選択者", file: "shodo-sentaku", title: "二高書道展2026", text: "１年生は、自分が前向きになれる言葉を写真と絵で表現しました。２年生は、愛する故郷・熊本をテーマに作品を作りました。お気に入りの書が見つかるはずです！", img: "" },
+          { name: "美術選択者", file: "art-sentaku", title: "作品展示", text: "美術選択者による作品展示です。（※紹介文の資料が無いため仮の文章です。差し替えてください）", img: "" },
+          { name: "育竜会", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", img: "" },
+          { name: "りんどう会", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", img: "" },
+          { name: "生徒会", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", img: "" }
         ]
       }
     ];
@@ -569,8 +656,8 @@
           ├─ hero.jpg          ← トップの大きな背景画像
           ├─ food/2-2.jpg      ← 食バザー 2年2組（food/2-4.jpg, 2-5 … と続く）
           ├─ exhibit/1-1.jpg   ← 展示
-          ├─ stage/band.jpg    ← ステージ/有志
-          ├─ club/brass.jpg    ← 部活動
+          ├─ stage/1-3.jpg     ← ステージ/有志（有志は grows.jpg など）
+          ├─ club/chemistry.jpg ← 部活動（ファイル名は各団体の file の値）
           └─ map/1f.png        ← 校内マップ（2f.png, 3f.png, 4f.png）
 
        ・ファイル名は半角英数字で、大文字小文字も正確に（GitHub Pagesは区別します）
@@ -605,9 +692,9 @@
     const dummyImg = (seed) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/800/600`;
 
     // カード1枚分のHTMLを作る
-    function cardHTML(item, cat, isClone) {
+    function cardHTML(item, cat, isClone, index) {
       const src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
-      return `<figure class="card"${isClone ? ' aria-hidden="true"' : ''}>
+      return `<figure class="card" data-i="${index}"${isClone ? ' aria-hidden="true"' : ''}>
         <img src="${src}" alt="" draggable="false" loading="lazy">
         <figcaption class="card__name">${item.name}</figcaption>
       </figure>`;
@@ -696,7 +783,7 @@
 
       const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
       const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-      const setHTML = (isClone) => cat.items.map((it) => cardHTML(it, cat, isClone)).join("");
+      const setHTML = (isClone) => cat.items.map((it, i) => cardHTML(it, cat, isClone, i)).join("");
       const render = () => { track.style.transform = `translate3d(${-pos}px,0,0)`; };
       const snap = (p) => base + Math.round((p - base) / step) * step;
 
@@ -768,7 +855,7 @@
       carousel.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { hovering = false; start(); } });
 
       // マウスドラッグ／タッチスワイプ（Pointer Events で共通処理）
-      let startX = 0, startPos = 0, lastX = 0, lastT = 0, vel = 0;
+      let startX = 0, startPos = 0, lastX = 0, lastT = 0, vel = 0, moved = false;
       viewport.addEventListener("pointerdown", (e) => {
         if (e.pointerType === "mouse" && e.button !== 0) return;
         dragging = true;
@@ -777,12 +864,14 @@
         startPos = pos;
         lastT = performance.now();
         vel = 0;
+        moved = false;
         viewport.setPointerCapture(e.pointerId);
         viewport.classList.add("is-dragging");
         stop();
       });
       viewport.addEventListener("pointermove", (e) => {
         if (!dragging) return;
+        if (Math.abs(e.clientX - startX) > 6) moved = true;   // 6px以上動いたらタップではなくドラッグ
         const now = performance.now();
         const dt = now - lastT;
         if (dt > 0) vel = vel * 0.6 + ((lastX - e.clientX) / dt) * 0.4;   // 指/マウスの勢い(px/ms)
@@ -792,12 +881,20 @@
         startPos += wrap();
         render();
       });
-      const endDrag = () => {
+      const endDrag = (e) => {
         if (!dragging) return;
         dragging = false;
         viewport.classList.remove("is-dragging");
-        animateTo(snap(pos + vel * 200), 500, easeOut);   // 勢いを加味して近いカードに揃える
+        const isTap = !moved && e.type === "pointerup";
+        // ドラッグなら勢いを加味して近いカードに揃える／タップならその場に留める
+        animateTo(snap(isTap ? pos : pos + vel * 200), 500, easeOut);
         start();
+        if (isTap) {
+          // タップ：指/マウスの下にあるカードの詳細ポップアップを開く
+          const el = document.elementFromPoint(e.clientX, e.clientY);
+          const card = el && el.closest(".card");
+          if (card && card.dataset.i !== undefined) openDetail(cat, cat.items[Number(card.dataset.i)]);
+        }
       };
       viewport.addEventListener("pointerup", endDrag);
       viewport.addEventListener("pointercancel", endDrag);
@@ -817,29 +914,84 @@
     }
 
     
-// ---------- 「すべて表示」モーダル ----------
-    const modal = document.getElementById("modal");
+    // ---------- ポップアップ（一覧モーダル／詳細モーダル） ----------
+    const modal = document.getElementById("modal");           // 「すべて表示」の一覧
     const modalTitle = document.getElementById("modalTitle");
     const modalGrid = document.getElementById("modalGrid");
     const modalClose = document.getElementById("modalClose");
-    let lastFocus = null;
+    const detail = document.getElementById("detail");         // 団体の詳細
+    const detailTitle = document.getElementById("detailTitle");
+    const detailSub = document.getElementById("detailSub");
+    const detailText = document.getElementById("detailText");
+    const detailImg = document.getElementById("detailImg");
+    const detailClose = document.getElementById("detailClose");
+    let modalFocus = null, detailFocus = null, modalCat = null;
 
+    // どれかのポップアップが開いている間は、背景をスクロールさせない
+    function updateScrollLock() {
+      const anyOpen = modal.classList.contains("is-open") || detail.classList.contains("is-open");
+      document.documentElement.classList.toggle("modal-open", anyOpen);
+    }
+
+    // 一覧モーダル（その部門の全団体をグリッド表示）
     function openModal(cat) {
-      lastFocus = document.activeElement;
+      modalFocus = document.activeElement;
+      modalCat = cat;
       modalTitle.textContent = cat.title;
-      modalGrid.innerHTML = cat.items.map((it) => cardHTML(it, cat)).join("");
+      modalGrid.innerHTML = cat.items.map((it, i) => cardHTML(it, cat, false, i)).join("");
+      modalGrid.querySelectorAll(".card").forEach((c) => { c.setAttribute("role", "button"); c.tabIndex = 0; });
       modal.classList.add("is-open");
-      document.documentElement.classList.add("modal-open");
+      updateScrollLock();
       modalClose.focus();
     }
     function closeModal() {
       modal.classList.remove("is-open");
-      document.documentElement.classList.remove("modal-open");
-      if (lastFocus) lastFocus.focus();
+      updateScrollLock();
+      if (modalFocus) modalFocus.focus();
     }
+
+    // 詳細モーダル：上＝団体名（＋企画名）／中＝紹介文／下＝画像 の順
+    function openDetail(cat, item) {
+      detailFocus = document.activeElement;
+      detailTitle.textContent = item.name;
+      detailSub.textContent = item.title || "";
+      detailSub.hidden = !item.title;
+      detailText.textContent = item.text || "";
+      detailImg.src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
+      detailImg.alt = item.name + "の画像";
+      detail.classList.add("is-open");
+      detail.querySelector(".modal__panel").scrollTop = 0;
+      updateScrollLock();
+      detailClose.focus();
+    }
+    function closeDetail() {
+      detail.classList.remove("is-open");
+      updateScrollLock();
+      if (detailFocus) detailFocus.focus();
+    }
+
     modalClose.addEventListener("click", closeModal);
-    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); }); // 背景クリックで閉じる
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal(); });
+    detailClose.addEventListener("click", closeDetail);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });     // 背景クリックで閉じる
+    detail.addEventListener("click", (e) => { if (e.target === detail) closeDetail(); });
+
+    // 一覧の中のカードをクリック（またはEnter）→ 詳細モーダル
+    modalGrid.addEventListener("click", (e) => {
+      const card = e.target.closest(".card");
+      if (card && modalCat) openDetail(modalCat, modalCat.items[Number(card.dataset.i)]);
+    });
+    modalGrid.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".card");
+      if (card && modalCat) { e.preventDefault(); openDetail(modalCat, modalCat.items[Number(card.dataset.i)]); }
+    });
+
+    // Escキー：いちばん手前のポップアップから閉じる
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (detail.classList.contains("is-open")) closeDetail();
+      else if (modal.classList.contains("is-open")) closeModal();
+    });
 
     // ---------- 校内マップ（スライダー） ----------
     // 仮のマップ画像（img が空のときに使うSVG）
