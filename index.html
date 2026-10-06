@@ -90,10 +90,10 @@
       object-fit: cover;
       object-position: center;   /* 縦長の画面（スマホ縦）は中央を表示 */
     }
-    /* 横長の画面（PC・スマホ横向き）は、画像の上側が映り、下側が切れるようにする。
-       縦位置は 0%（いちばん上）〜100%（いちばん下）。数字を大きくすると下側も少し映ります */
+    /* 横長の画面（PC・スマホ横向き）：キャラクターの顔が映る高さに自動調整します。
+       正確な位置はJavaScript（HERO_FOCUS_Y）が計算します。下はJSが動くまでの仮の値です */
     @media (min-aspect-ratio: 1 / 1) {
-      .hero__bg { object-position: center 0%; }
+      .hero__bg { object-position: center 22%; }
     }
 
     .hero__content {
@@ -671,6 +671,9 @@
     ================================================== */
     const IMAGE_FOLDER = "images";
     const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];   // 探す拡張子（順番に試します）
+    /* 横長画面で「画像の縦方向のどこ」を画面の中心にするか（0 = 画像の一番上 〜 1 = 一番下）。
+       今のメイン画像は、2体のキャラの顔の中間あたりが約0.37。画像を変えたら調整してください */
+    const HERO_FOCUS_Y = 0.37;
     const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
     const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
 
@@ -1088,19 +1091,34 @@
     mapViewport.addEventListener("pointerup", mapEndDrag);
     mapViewport.addEventListener("pointercancel", mapEndDrag);
 
+    // ---------- ヒーロー画像の見せる位置（横長画面で顔が映るように） ----------
+    // 画面の縦横比に合わせて、HERO_FOCUS_Y の高さが画面の中心に来るよう object-position を計算します
+    function updateHeroFocus() {
+      const img = document.getElementById("heroImg");
+      const cw = window.innerWidth, ch = window.innerHeight;
+      if (!img.naturalWidth) return;
+      if (cw < ch) { img.style.objectPosition = "center"; return; }      // 縦長画面は中央
+      const scaledH = img.naturalHeight * Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+      const visible = ch / scaledH;                                      // 画像のうち縦に何割が映るか
+      if (visible >= 1) { img.style.objectPosition = "center"; return; }
+      const p = Math.min(1, Math.max(0, (HERO_FOCUS_Y - visible / 2) / (1 - visible)));
+      img.style.objectPosition = "center " + (p * 100).toFixed(1) + "%";
+    }
+    window.addEventListener("resize", updateHeroFocus);
+
     // ---------- 画像の準備 → 表示の組み立て ----------
     // ① ヒーロー画像を先に読み込み、完了してから文字の演出を開始（文字だけ先に動かない）
     resolveHero().then((heroSrc) => {
       const heroImg = document.getElementById("heroImg");
       let usedFallback = false;
-      heroImg.onload = startHeroAnimation;
+      heroImg.onload = () => { updateHeroFocus(); startHeroAnimation(); };
       heroImg.onerror = () => {
         if (!usedFallback) { usedFallback = true; heroImg.src = HERO_FALLBACK; }  // 失敗したら仮画像で再挑戦
         else startHeroAnimation();                                                 // それでも駄目でも演出は始める
       };
       heroImg.alt = "文化祭メイン画像";
       heroImg.src = heroSrc;
-      if (heroImg.complete && heroImg.naturalWidth) startHeroAnimation();          // キャッシュ済みの場合
+      if (heroImg.complete && heroImg.naturalWidth) { updateHeroFocus(); startHeroAnimation(); } // キャッシュ済みの場合
     });
     setTimeout(() => startHeroAnimation(), 8000);   // 通信が極端に遅くても、8秒後には演出を始める保険
 
