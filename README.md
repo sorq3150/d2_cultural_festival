@@ -1,2 +1,0 @@
-# d2_cultural_festival
-第二高校の第64回文化祭のパンフレット
