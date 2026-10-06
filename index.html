@@ -88,7 +88,12 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
+      object-position: center;   /* 縦長の画面（スマホ縦）は中央を表示 */
+    }
+    /* 横長の画面（PC・スマホ横向き）は、画像の上側が映り、下側が切れるようにする。
+       縦位置は 0%（いちばん上）〜100%（いちばん下）。数字を大きくすると下側も少し映ります */
+    @media (min-aspect-ratio: 1 / 1) {
+      .hero__bg { object-position: center 0%; }
     }
 
     .hero__content {
