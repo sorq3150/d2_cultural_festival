@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ja" class="is-locked">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>第64回 文化祭｜伝承華</title>
+
+  <!-- Google Fonts：明朝体（Noto Serif JP） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==================================================
+       配色（ダーク／ライト）
+       ★色を変えたいときはここの変数だけ編集すればOKです。
+       OSのテーマ設定に自動で追従します（JavaScriptが <html data-theme="..."> を切り替え）。
+    ================================================== */
+    :root {
+      color-scheme: dark light;
+      /* ▼ ダークモード（初期値） */
+      --ink: #15131a;          /* ページ背景 */
+      --ink-soft: #1f1c27;     /* モーダル・マップ枠の背景 */
+      --sakura: #e8a6b6;       /* アクセント色（桜） */
+      --text: #ffffff;         /* 文字色 */
+      --line: rgba(255, 255, 255, 0.5);       /* ボタンの枠線 */
+      --card-border: rgba(255, 255, 255, 0.14); /* カード・マップの枠線 */
+      --card-w: clamp(240px, 28vw, 340px);  /* カードの幅 */
+      --gap: 1rem;
+      --pad: clamp(1rem, 4vw, 3rem);          /* 左端の余白 */
+    }
+
+    /* ▼ ライトモード（JSで data-theme="light" が付いたとき） */
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --ink: #faf7f4;
+      --ink-soft: #ffffff;
+      --sakura: #b4415c;
+      --text: #1d1a20;
+      --line: rgba(0, 0, 0, 0.35);
+      --card-border: rgba(0, 0, 0, 0.14);
+    }
+    /* ▼ JSが動く前の保険（OS設定がライトのとき）。上と同じ値にしてください */
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme]) {
+        color-scheme: light;
+        --ink: #faf7f4; --ink-soft: #ffffff; --sakura: #b4415c;
+        --text: #1d1a20; --line: rgba(0, 0, 0, 0.35); --card-border: rgba(0, 0, 0, 0.14);
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Noto Serif JP", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+      background: var(--ink);
+      color: var(--text);
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* スクロールロック（ヒーロー演出中・モーダル表示中） */
+    html.is-locked, html.is-locked body,
+    html.modal-open, html.modal-open body { overflow: hidden; }
+
+    /* ==================================================
+       1. ヒーローセクション
+    ================================================== */
+    .hero {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ★背景画像：HTML内の <img class="hero__bg"> の src を差し替え */
+    .hero__bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .hero__content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ① 縦書きメインタイトル */
+    .title-vertical {
+      writing-mode: vertical-rl;
+      color: #fff;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      line-height: 1.8;
+      padding: 2.5rem 1.8rem;
+      /* 背景ではなく影で文字を際立たせる（濃さ・広がりはここで調整） */
+      text-shadow:
+        0 0 4px rgba(0, 0, 0, 0.9),
+        2px 2px 4px #000,
+        -2px 2px 4px #000,
+        0 0 12px rgba(0, 0, 0, 0.8),
+        0 0 28px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+    }
+    .title-vertical__main { display: block; font-size: clamp(2.8rem, 8vw, 5.5rem); font-weight: 300; }
+    .title-vertical__sub  { display: block; font-size: clamp(1rem, 2.4vw, 1.6rem); font-weight: 200; }
+
+    /* ② 横書きサブタイトル（画面左下） */
+    .title-horizontal {
+      position: absolute;
+      left: clamp(1rem, 3vw, 3rem);
+      bottom: clamp(1rem, 4vh, 2.5rem);
+      color: #fff;
+      font-weight: 900;
+      font-size: clamp(1.1rem, 2.4vw, 1.8rem);
+      line-height: 1.3;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      -webkit-text-stroke: 1px #000;
+      paint-order: stroke fill;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+                   0 2px 8px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+    }
+
+    /* 「Scroll ↓」案内（演出完了後に表示） */
+    .scroll-hint {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(1rem, 4vh, 2.5rem);
+      transform: translateX(-50%);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      color: #fff;
+      font-family: inherit;
+      font-weight: 300;
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+    .scroll-hint.is-visible { opacity: 1; pointer-events: auto; }
+    .scroll-hint span { display: inline-block; animation: bob 1.6s ease-in-out infinite; }
+
+    /* アニメーション（①0.3s後から2.5秒 → ②2.8s後から0.9秒） */
+    .is-loaded .title-vertical   { animation: fadeIn 2.5s ease-out 0.3s forwards; }
+    .is-loaded .title-horizontal { animation: slideInFromLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2.8s forwards; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideInFromLeft {
+      from { opacity: 0; transform: translateX(-150%); }  /* 画面の左外から（上下は動かない） */
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ==================================================
+       2. カテゴリ別カルーセル
+    ================================================== */
+    .categories {
+      padding: clamp(3rem, 8vw, 6rem) 0 clamp(3rem, 8vw, 6rem);
+    }
+
+    .category { margin-bottom: clamp(2.5rem, 6vw, 4.5rem); }
+    .category:last-child { margin-bottom: 0; }
+
+    .category__head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 clamp(1rem, 4vw, 3rem);
+      margin-bottom: 1rem;
+    }
+    .category__title {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      padding-left: 0.8rem;
+      border-left: 3px solid var(--sakura);
+    }
+    .all-btn {
+      background: none;
+      border: 0;
+      color: var(--sakura);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      white-space: nowrap;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid transparent;
+    }
+    .all-btn:hover, .all-btn:focus-visible { border-bottom-color: var(--sakura); outline: none; }
+
+    .carousel { position: relative; overflow: hidden; }
+
+    /* 表示窓（横ドラッグは自前処理、縦スクロールはブラウザに任せる） */
+    .carousel__viewport {
+      overflow: hidden;
+      touch-action: pan-y;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .carousel__viewport.is-dragging { cursor: grabbing; }
+
+    /* カードの並び（JavaScriptが transform で動かします） */
+    .carousel__track {
+      display: flex;
+      gap: var(--gap);
+      width: max-content;
+      margin-left: var(--pad);
+      will-change: transform;
+    }
+
+    /* カード（ボックス） */
+    .card {
+      position: relative;
+      flex: 0 0 var(--card-w);
+      aspect-ratio: 4 / 3;          /* 16 / 9 に変えるとより横長になります */
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #333;
+    }
+    .card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .card__name {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+      color: #fff;
+      font-weight: 300;
+      font-size: clamp(1.3rem, 2.6vw, 1.8rem);
+      letter-spacing: 0.12em;
+      text-shadow: 0 0 4px #000, 2px 2px 3px #000, -2px 2px 3px #000, 0 3px 10px rgba(0, 0, 0, 0.9);
+      background: linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+    }
+
+    /* 左右ボタン */
+    .carousel__btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 2.8rem;
+      height: 2.8rem;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-family: inherit;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .carousel__btn:hover, .carousel__btn:focus-visible { background: rgba(232, 166, 182, 0.85); outline: none; }
+    .carousel__btn--prev { left: clamp(0.4rem, 1.5vw, 1.2rem); }
+    .carousel__btn--next { right: clamp(0.4rem, 1.5vw, 1.2rem); }
+
+    /* ==================================================
+       3. 「すべて表示」モーダル
+    ================================================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.75);
+    }
+    .modal.is-open { display: flex; }
+    .modal__panel {
+      width: min(960px, 100%);
+      max-height: 88vh;
+      overflow-y: auto;
+      background: var(--ink-soft);
+      border-radius: 10px;
+      padding: clamp(1.2rem, 3vw, 2rem);
+    }
+    .modal__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+    .modal__title {
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      padding-left: 0.8rem;
+      border-left: 3px solid var(--sakura);
+    }
+    .modal__close {
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      width: 2.4rem;
+      height: 2.4rem;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .modal__close:hover, .modal__close:focus-visible { background: rgba(128, 128, 128, 0.25); outline: none; }
+    .modal__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.8rem;
+    }
+    .modal__grid .card { flex: none; }
+
+    /* ==================================================
+       4. 校内マップ（階層選択）
+    ================================================== */
+    .map {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 var(--pad) clamp(3rem, 8vw, 6rem);
+    }
+    .map__tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1rem; }
+    .map__tab {
+      font-family: inherit;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      padding: 0.5rem 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: none;
+      color: var(--text);
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .map__tab:hover, .map__tab:focus-visible { border-color: var(--sakura); outline: none; }
+    .map__tab[aria-selected="true"] { background: var(--sakura); border-color: var(--sakura); color: var(--ink); }
+    .map__frame {
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--ink-soft);
+    }
+    .map__frame img { display: block; width: 100%; height: 100%; object-fit: contain; transition: opacity 0.2s; }
+    .map__frame img.is-fading { opacity: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .is-loaded .title-vertical, .is-loaded .title-horizontal { animation-duration: 0.01s; animation-delay: 0s; }
+      .scroll-hint span { animation: none; }
+    }
+
+    @media (max-width: 600px) {
+      .title-vertical { padding: 1.8rem 1.2rem; }
+      .title-horizontal { left: 1rem; bottom: 1rem; }
+      .scroll-hint { bottom: 1rem; }
+      .carousel__btn { width: 2.3rem; height: 2.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================================================
+       1. ヒーロー（ファーストビュー）
+  ================================================== -->
+  <section class="hero" id="hero">
+
+    <!-- ▼▼▼ 背景画像 ▼▼▼
+         images/hero.jpg（または .png / .webp）を置くと自動で表示されます。
+         画像が無いときは仮画像（Unsplash）が表示されます。
+         ※src と alt は下の <script> が自動で設定します -->
+    <img class="hero__bg" id="heroImg" alt="">
+    <!-- ▲▲▲ 背景画像ここまで ▲▲▲ -->
+
+    <div class="hero__content">
+      <div>
+        <!-- ① 縦書きメインタイトル（縦書きでは「ー」が縦線として表示されます） -->
+        <h1 class="title-vertical">
+          <span class="title-vertical__main">伝承華</span>
+          <span class="title-vertical__sub">ー受け継ぐ想い、咲き誇る今ー</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- ② 横書きサブタイトル（画面左下） -->
+    <p class="title-horizontal" id="subtitle">第64回<br>文化祭</p>
+
+    <!-- スクロール案内（サブタイトル表示完了後に出現） -->
+    <button class="scroll-hint" id="scrollHint" type="button">Scroll <span>↓</span></button>
+  </section>
+
+  <!-- ==================================================
+       2. カテゴリ別カルーセル
+       ※ここは下の <script> 内の「CATEGORIES」から自動生成されます。
+         団体の追加・画像差し替え・カテゴリ追加はすべて CATEGORIES を編集してください。
+  ================================================== -->
+  <main class="categories" id="categories"></main>
+
+  <!-- ==================================================
+       校内マップ（階層選択）
+       ※タブと画像は下の <script> 内の「FLOORS」から自動生成されます。
+  ================================================== -->
+  <section class="map" id="map">
+    <h2 class="category__title">校内マップ</h2>
+    <div class="map__tabs" id="mapTabs" role="tablist" aria-label="階を選択"></div>
+    <div class="map__frame" role="tabpanel">
+      <img id="mapImg" alt="">
+    </div>
+  </section>
+
+  <!-- ==================================================
+       3. 「すべて表示」モーダル（中身はJavaScriptで入れ替わります）
+  ================================================== -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal__panel">
+      <div class="modal__head">
+        <h2 class="modal__title" id="modalTitle"></h2>
+        <button class="modal__close" id="modalClose" type="button" aria-label="閉じる">✕</button>
+      </div>
+      <div class="modal__grid" id="modalGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ==================================================
+       ★★★ データ設定（ここを編集すると表示内容が変わります） ★★★
+
+       ■ 画像の差し替え（かんたん）：
+           images/カテゴリid/file名.jpg  というファイルを置くだけで自動表示されます。
+           例）食バザーの2年2組 → images/food/2-2.jpg
+           （.jpg .jpeg .png .webp に対応／見つからなければ仮画像）
+         ※img にURLを書くと、そちらが優先されます。 例）img: "https://…/photo.jpg"
+       ■ 団体の追加：items の中に { name: "団体名", file: "半角英数のファイル名", img: "" } を1行足す
+       ■ カテゴリ（5つ目以降）の追加：下の配列の最後に
+           { id: "xxx", title: "カテゴリ名", items: [ ... ] },
+         をコピーして足すだけで、見出し・スライダー・「すべて表示」が自動で作られます。
+    ================================================== */
+    const CATEGORIES = [
+      {
+        id: "food",
+        title: "食バザー",
+        items: [
+          // ▼ 食バザーの画像差し替え箇所
+          { name: "2年2組", file: "2-2", img: "" },
+          { name: "2年4組", file: "2-4", img: "" },
+          { name: "2年5組", file: "2-5", img: "" },
+          { name: "2年6組", file: "2-6", img: "" },
+          { name: "2年8組", file: "2-8", img: "" },
+          { name: "2年S組", file: "2-S", img: "" }
+        ]
+      },
+      {
+        id: "exhibit",
+        title: "展示",
+        items: [
+          // ▼ 展示の画像差し替え箇所
+          { name: "1年1組", file: "1-1", img: "" },
+          { name: "1年2組", file: "1-2", img: "" },
+          { name: "1年3組", file: "1-3", img: "" },
+          { name: "美術部", file: "art", img: "" },
+          { name: "写真部", file: "photo", img: "" }
+        ]
+      },
+      {
+        id: "stage",
+        title: "ステージ / 有志",
+        items: [
+          // ▼ ステージ/有志の画像差し替え箇所
+          { name: "有志バンド", file: "band", img: "" },
+          { name: "ダンス部", file: "dance-club", img: "" },
+          { name: "演劇部", file: "drama", img: "" },
+          { name: "有志ダンス", file: "dance-yushi", img: "" }
+        ]
+      },
+      {
+        id: "club",
+        title: "部活動",
+        items: [
+          // ▼ 部活動の画像差し替え箇所
+          { name: "吹奏楽部", file: "brass", img: "" },
+          { name: "書道部", file: "calligraphy", img: "" },
+          { name: "茶道部", file: "tea", img: "" },
+          { name: "華道部", file: "flower", img: "" }
+        ]
+      }
+    ];
+
+    /* ==================================================
+       ★校内マップの設定
+       ■ 画像の差し替え（かんたん）：images/map/1f.png のように置くだけで自動表示されます
+           （1f=1階, 2f=2階 …／.jpg .jpeg .png .webp に対応／なければ仮マップ）
+         ※img にURLを書くと、そちらが優先されます。
+       ■ 階の追加：配列に { label: "5階", file: "5f", img: "" } を足すとタブも増えます
+    ================================================== */
+    const FLOORS = [
+      // ▼ 1階のマップ画像差し替え箇所
+      { label: "1階", file: "1f", img: "" },
+      // ▼ 2階のマップ画像差し替え箇所
+      { label: "2階", file: "2f", img: "" },
+      // ▼ 3階のマップ画像差し替え箇所
+      { label: "3階", file: "3f", img: "" },
+      // ▼ 4階のマップ画像差し替え箇所
+      { label: "4階", file: "4f", img: "" }
+    ];
+
+    /* ==================================================
+       ★画像フォルダの設定（GitHubにアップロードする画像の置き場所）
+
+       index.html と同じ場所に「images」フォルダを作り、次のように画像を置きます。
+
+         images/
+          ├─ hero.jpg          ← トップの大きな背景画像
+          ├─ food/2-2.jpg      ← 食バザー 2年2組（food/2-4.jpg, 2-5 … と続く）
+          ├─ exhibit/1-1.jpg   ← 展示
+          ├─ stage/band.jpg    ← ステージ/有志
+          ├─ club/brass.jpg    ← 部活動
+          └─ map/1f.png        ← 校内マップ（2f.png, 3f.png, 4f.png）
+
+       ・ファイル名は半角英数字で、大文字小文字も正確に（GitHub Pagesは区別します）
+       ・拡張子は小文字（.jpg .jpeg .png .webp）。画像が無い所は仮画像になります
+       ・画像は横幅1600px・1MB以下くらいに軽くしておくと表示が速くなります
+    ================================================== */
+    const IMAGE_FOLDER = "images";
+    const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];   // 探す拡張子（順番に試します）
+    const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
+    const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
+
+    /* 自動スライドの間隔（ミリ秒）。4000〜5000が目安 */
+    const AUTO_SLIDE_MS = 4500;
+    /* 自動スライドで1枚動くときの速さ（ミリ秒）。大きいほどゆっくり */
+    const SLIDE_MS = 700;
+    /* 「＜」「＞」ボタンを押したときの速さ（ミリ秒）。200〜300でスッと素早く動きます */
+    const BUTTON_SLIDE_MS = 250;
+
+    /* ==================================================
+       以下はプログラム本体（初心者の方は触らなくてOKです）
+    ================================================== */
+
+    // 仮画像（img が空のときに使うダミー画像）
+    const dummyImg = (seed) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/800/600`;
+
+    // カード1枚分のHTMLを作る
+    function cardHTML(item, cat, isClone) {
+      const src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
+      return `<figure class="card"${isClone ? ' aria-hidden="true"' : ''}>
+        <img src="${src}" alt="" draggable="false" loading="lazy">
+        <figcaption class="card__name">${item.name}</figcaption>
+      </figure>`;
+    }
+
+    // ---------- 画像の自動検出（images フォルダにある画像を探す） ----------
+    // 画像が読み込めるか確認（3秒で打ち切り）
+    function probeImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const timer = setTimeout(() => resolve(false), 3000);
+        img.onload = () => { clearTimeout(timer); resolve(true); };
+        img.onerror = () => { clearTimeout(timer); resolve(false); };
+        img.src = src;
+      });
+    }
+    // images/フォルダ/ファイル名.拡張子 を順に探す。見つからなければ ""
+    async function findImage(folder, file) {
+      for (const ext of IMAGE_EXTENSIONS) {
+        const src = [IMAGE_FOLDER, folder, encodeURIComponent(file)].filter(Boolean).join("/") + "." + ext;
+        if (await probeImage(src)) return src;
+      }
+      return "";
+    }
+    // すべての画像（団体・マップ・ヒーロー）を決める：img指定 → imagesフォルダ → 仮画像 の順
+    async function resolveAllImages() {
+      const jobs = [];
+      CATEGORIES.forEach((cat) => cat.items.forEach((item) => {
+        jobs.push((async () => {
+          item.src = item.img || (item.file ? await findImage(cat.id, item.file) : "") || dummyImg(cat.id + "-" + item.name);
+        })());
+      }));
+      FLOORS.forEach((f) => {
+        jobs.push((async () => {
+          f.src = f.img || (f.file ? await findImage("map", f.file) : "") || mapPlaceholder(f.label);
+        })());
+      });
+      let heroSrc = "";
+      jobs.push((async () => { heroSrc = HERO_IMAGE || (await findImage("", "hero")) || HERO_FALLBACK; })());
+      await Promise.all(jobs);
+      return { heroSrc };
+    }
+
+    // ---------- カテゴリセクションの生成 ----------
+    const root = document.getElementById("categories");
+
+    function buildCategories() {
+    CATEGORIES.forEach((cat) => {
+      const sec = document.createElement("section");
+      sec.className = "category";
+      sec.id = "cat-" + cat.id;
+      sec.innerHTML = `
+        <div class="category__head">
+          <h2 class="category__title">${cat.title}</h2>
+          <button class="all-btn" type="button">＜すべて表示＞</button>
+        </div>
+        <div class="carousel">
+          <button class="carousel__btn carousel__btn--prev" type="button" aria-label="前へ">＜</button>
+          <div class="carousel__viewport"><div class="carousel__track"></div></div>
+          <button class="carousel__btn carousel__btn--next" type="button" aria-label="次へ">＞</button>
+        </div>`;
+      root.appendChild(sec);
+
+      setupCarousel(sec.querySelector(".carousel"), cat);
+      sec.querySelector(".all-btn").addEventListener("click", () => openModal(cat));
+    });
+    }
+
+    // ---------- 無限ループ・カルーセルの動作 ----------
+    // 仕組み：団体カードを前後に複製（クローン）して並べ、
+    //         位置が1セット分ずれたら見た目が変わらないまま元の位置へ戻す → 途切れずに回り続けます。
+    function setupCarousel(carousel, cat) {
+      const viewport = carousel.querySelector(".carousel__viewport");
+      const track = carousel.querySelector(".carousel__track");
+      const prev = carousel.querySelector(".carousel__btn--prev");
+      const next = carousel.querySelector(".carousel__btn--next");
+      const n = cat.items.length;
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      let step = 0;   // カード1枚ぶんの移動量（カード幅＋すき間）
+      let setW = 0;   // 団体カード1セットぶんの幅
+      let base = 0;   // 本物（中央セット）の先頭位置
+      let pos = 0;    // 現在のスクロール位置(px)
+      let tween = null, raf = 0;
+
+      const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+      const setHTML = (isClone) => cat.items.map((it) => cardHTML(it, cat, isClone)).join("");
+      const render = () => { track.style.transform = `translate3d(${-pos}px,0,0)`; };
+      const snap = (p) => base + Math.round((p - base) / step) * step;
+
+      // カードを並べ直す（最初と画面サイズ変更時）。index=先頭に表示する団体の番号
+      function build(index) {
+        track.innerHTML = setHTML(false);                       // 1セットだけ作って幅を測る
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        step = track.firstElementChild.offsetWidth + gap;
+        setW = step * n;
+        const copies = Math.ceil(carousel.clientWidth / setW) + 1;   // 左右に必要なクローン数
+        let html = "";
+        for (let i = 0; i < copies * 2 + 1; i++) html += setHTML(i !== copies);
+        track.innerHTML = html;
+        base = copies * setW;
+        pos = base + index * step;
+        tween = null;
+        render();
+      }
+
+      // 位置が中央セットの外に出たら、1セットぶん戻す（見た目は変わらない）。戻した量を返す
+      function wrap() {
+        let d = 0;
+        while (pos >= base + setW) { pos -= setW; d -= setW; }
+        while (pos < base) { pos += setW; d += setW; }
+        if (d && tween) { tween.from += d; tween.to += d; }
+        return d;
+      }
+
+      // なめらかに target 位置まで動かす
+      function animateTo(target, dur, ease) {
+        tween = { from: pos, to: target, t0: performance.now(), dur: reduceMotion ? 1 : dur, ease };
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+      function tick(now) {
+        raf = 0;
+        if (!tween) return;
+        const t = Math.min(1, Math.max(0, (now - tween.t0) / tween.dur));
+        pos = tween.from + (tween.to - tween.from) * tween.ease(t);
+        wrap();
+        render();
+        if (t < 1) raf = requestAnimationFrame(tick); else tween = null;
+      }
+
+      // dir: 1=次へ / -1=前へ（常に1枚ずつ）
+      function slideBy(dir, dur = SLIDE_MS, ease = easeInOut) {
+        const cur = tween ? tween.to : snap(pos);
+        animateTo(cur + dir * step, dur, ease);
+      }
+
+      // ボタン操作：素早くスッと動かし、自動再生のタイマーをリセット
+      prev.addEventListener("click", () => { slideBy(-1, BUTTON_SLIDE_MS, easeOut); start(); });
+      next.addEventListener("click", () => { slideBy(1, BUTTON_SLIDE_MS, easeOut); start(); });
+
+      // オートスライド（マウスを乗せている間・ドラッグ中は停止）
+      let timer = null, hovering = false, dragging = false;
+      const stop = () => { clearInterval(timer); timer = null; };
+      const start = () => {
+        stop();
+        if (!hovering) timer = setInterval(() => { if (!dragging && !document.hidden) slideBy(1); }, AUTO_SLIDE_MS);
+      };
+      carousel.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") { hovering = true; stop(); } });
+      carousel.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { hovering = false; start(); } });
+
+      // マウスドラッグ／タッチスワイプ（Pointer Events で共通処理）
+      let startX = 0, startPos = 0, lastX = 0, lastT = 0, vel = 0;
+      viewport.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        dragging = true;
+        tween = null;
+        startX = lastX = e.clientX;
+        startPos = pos;
+        lastT = performance.now();
+        vel = 0;
+        viewport.setPointerCapture(e.pointerId);
+        viewport.classList.add("is-dragging");
+        stop();
+      });
+      viewport.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const now = performance.now();
+        const dt = now - lastT;
+        if (dt > 0) vel = vel * 0.6 + ((lastX - e.clientX) / dt) * 0.4;   // 指/マウスの勢い(px/ms)
+        lastX = e.clientX;
+        lastT = now;
+        pos = startPos - (e.clientX - startX);
+        startPos += wrap();
+        render();
+      });
+      const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        viewport.classList.remove("is-dragging");
+        animateTo(snap(pos + vel * 200), 500, easeOut);   // 勢いを加味して近いカードに揃える
+        start();
+      };
+      viewport.addEventListener("pointerup", endDrag);
+      viewport.addEventListener("pointercancel", endDrag);
+
+      // 画面サイズが変わったら並べ直す
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const idx = ((Math.round((pos - base) / step) % n) + n) % n;
+          build(idx);
+        }, 150);
+      });
+
+      build(0);
+      start();
+    }
+
+    
+// ---------- 「すべて表示」モーダル ----------
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalGrid = document.getElementById("modalGrid");
+    const modalClose = document.getElementById("modalClose");
+    let lastFocus = null;
+
+    function openModal(cat) {
+      lastFocus = document.activeElement;
+      modalTitle.textContent = cat.title;
+      modalGrid.innerHTML = cat.items.map((it) => cardHTML(it, cat)).join("");
+      modal.classList.add("is-open");
+      document.documentElement.classList.add("modal-open");
+      modalClose.focus();
+    }
+    function closeModal() {
+      modal.classList.remove("is-open");
+      document.documentElement.classList.remove("modal-open");
+      if (lastFocus) lastFocus.focus();
+    }
+    modalClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); }); // 背景クリックで閉じる
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal(); });
+
+    // ---------- 校内マップ（階の切り替え） ----------
+    // 仮のマップ画像（img が空のときに使うSVG）
+    function mapPlaceholder(label) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+        <rect width="800" height="500" fill="#e9e4ea"/>
+        <g fill="none" stroke="#9a93a0" stroke-width="3">
+          <rect x="40" y="40" width="720" height="420"/>
+          <path d="M40 200H760M300 40V200M520 40V200M200 200V460M600 200V460"/>
+        </g>
+        <text x="400" y="340" text-anchor="middle" font-size="40" fill="#6d6673" font-family="serif">${label} マップ（仮）</text>
+      </svg>`;
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    const mapTabs = document.getElementById("mapTabs");
+    const mapImg = document.getElementById("mapImg");
+    const tabButtons = FLOORS.map((floor, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "map__tab";
+      b.setAttribute("role", "tab");
+      b.textContent = floor.label;
+      b.addEventListener("click", () => showFloor(i));
+      mapTabs.appendChild(b);
+      return b;
+    });
+
+    function showFloor(i) {
+      tabButtons.forEach((b, j) => b.setAttribute("aria-selected", String(i === j)));
+      const floor = FLOORS[i];
+      mapImg.classList.add("is-fading");
+      setTimeout(() => {
+        mapImg.onload = () => mapImg.classList.remove("is-fading");
+        mapImg.alt = floor.label + "の校内マップ";
+        mapImg.src = floor.src || floor.img || mapPlaceholder(floor.label);
+      }, 150);
+    }
+
+    // ←→キーで階を切り替え
+    mapTabs.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const cur = tabButtons.findIndex((b) => b.getAttribute("aria-selected") === "true");
+      const nextIdx = (cur + (e.key === "ArrowRight" ? 1 : -1) + FLOORS.length) % FLOORS.length;
+      showFloor(nextIdx);
+      tabButtons[nextIdx].focus();
+    });
+
+    // ---------- 画像の確認が終わってから、カード・マップ・背景を表示 ----------
+    resolveAllImages().then(({ heroSrc }) => {
+      const heroImg = document.getElementById("heroImg");
+      heroImg.src = heroSrc;
+      heroImg.alt = "文化祭メイン画像";
+      buildCategories();
+      showFloor(0);
+    });
+
+    // ---------- ダーク／ライトモード（OS設定に自動追従） ----------
+    // ページを開いたままOSのテーマを変えても、リロードなしで即座に切り替わります。
+    const colorQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    function applyTheme(isDark) {
+      document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+    }
+    applyTheme(colorQuery.matches);
+    if (colorQuery.addEventListener) {
+      colorQuery.addEventListener("change", (e) => applyTheme(e.matches));
+    } else {
+      colorQuery.addListener((e) => applyTheme(e.matches)); // 古いSafari向け
+    }
+
+    // ---------- ヒーロー演出＆スクロールロック解除 ----------
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
+    const hero = document.getElementById("hero");
+    const subtitle = document.getElementById("subtitle");
+    const hint = document.getElementById("scrollHint");
+    let unlocked = false;
+
+    function unlockScroll() {
+      if (unlocked) return;
+      unlocked = true;
+      document.documentElement.classList.remove("is-locked"); // スクロール解禁
+      hint.classList.add("is-visible");                       // 「Scroll ↓」表示
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      hero.classList.add("is-loaded");
+      // サブタイトルのアニメーション終了で解禁（念のため保険タイマーも設定）
+      subtitle.addEventListener("animationend", unlockScroll);
+      setTimeout(unlockScroll, 4500);
+    });
+
+    hint.addEventListener("click", () => {
+      document.getElementById("categories").scrollIntoView({ behavior: "smooth" });
+    });
+  </script>
+</body>
+</html>
