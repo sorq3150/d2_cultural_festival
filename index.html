@@ -449,6 +449,9 @@
 
     @media (max-width: 767px) {
       :root { --gap: 10px; }
+      /* 「＜すべて表示＞」の一覧：スマホでは2列で表示 */
+      .modal__grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+      .modal__grid .card__name { font-size: 1.05rem; letter-spacing: 0.06em; padding: 0.5rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
