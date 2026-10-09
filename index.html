@@ -271,6 +271,7 @@
       object-fit: cover;
       pointer-events: none;
     }
+    .nb { display: inline-block; white-space: nowrap; }   /* この中では折り返さない */
     .card__name {
       position: absolute;
       inset: 0;
@@ -565,6 +566,8 @@
          ※この画像は、カードの背景と、詳細ポップアップの下部（紹介文の下）に使われます。
        ■ 各団体のデータの意味：
            name  = カードに表示する団体名
+           wrap  = 2段に折り返すときの改行位置（任意）。"普通科|美術部" のように | で区切る。
+                   カードが狭くなって2段になるとき、| の位置でだけ改行されます。不要なら書かなくてOK
            file  = 画像のファイル名（半角英数。images/カテゴリid/file.jpg）
            title = 企画名（詳細ポップアップの見出し下に表示。不要なら "" ）
            text  = 紹介文（詳細ポップアップの中ほどに表示）
@@ -636,8 +639,8 @@
           { name: "生物部", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", img: "" },
           { name: "地学部", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", img: "" },
           { name: "写真部", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", img: "" },
-          { name: "普通科美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
-          { name: "美術科美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
+          { name: "普通科美術部", wrap: "普通科|美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
+          { name: "美術科美術部", wrap: "美術科|美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
           { name: "茶道部", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", img: "" },
           { name: "英語部", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", img: "" },
           { name: "書道部", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", img: "" },
@@ -716,12 +719,19 @@
     // 仮画像（img が空のときに使うダミー画像）
     const dummyImg = (seed) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/800/600`;
 
+    // カードに表示する団体名のHTML。wrap があれば、| の位置でだけ折り返す（例：普通科 / 美術部）
+    function nameHTML(item) {
+      if (!item.wrap) return item.name;
+      // 外側の <span> で包む（.card__name は flex なので、包まないと中身が横に並んだまま折り返さない）
+      return "<span>" + item.wrap.split("|").map((part) => `<span class="nb">${part}</span>`).join("<wbr>") + "</span>";
+    }
+
     // カード1枚分のHTMLを作る
     function cardHTML(item, cat, isClone, index) {
       const src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
       return `<figure class="card" data-i="${index}"${isClone ? ' aria-hidden="true"' : ''}>
         <img src="${src}" alt="" draggable="false" loading="lazy">
-        <figcaption class="card__name">${item.name}</figcaption>
+        <figcaption class="card__name">${nameHTML(item)}</figcaption>
       </figure>`;
     }
 
