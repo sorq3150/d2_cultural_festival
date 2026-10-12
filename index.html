@@ -958,10 +958,16 @@
       // オートスライド（マウスを乗せている間・ドラッグ中は停止）
       let timer = null, hovering = false, dragging = false;
       const stop = () => { clearInterval(timer); timer = null; };
+      // ポップアップ（詳細／一覧）が開いている間は、自動再生しない
+      const modalIsOpen = () => document.documentElement.classList.contains("modal-open");
       const start = () => {
         stop();
-        if (!hovering) timer = setInterval(() => { if (!dragging && !document.hidden) slideBy(1); }, AUTO_SLIDE_MS);
+        if (!hovering && !modalIsOpen()) {
+          timer = setInterval(() => { if (!dragging && !document.hidden && !modalIsOpen()) slideBy(1); }, AUTO_SLIDE_MS);
+        }
       };
+      // ポップアップが開いたら一時停止、閉じたら自動で再開（modalstate は下の updateScrollLock が送る合図）
+      document.addEventListener("modalstate", (e) => { if (e.detail.open) stop(); else start(); });
       carousel.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") { hovering = true; stop(); } });
       carousel.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { hovering = false; start(); } });
 
@@ -1042,6 +1048,7 @@
     function updateScrollLock() {
       const anyOpen = modal.classList.contains("is-open") || detail.classList.contains("is-open");
       document.documentElement.classList.toggle("modal-open", anyOpen);
+      document.dispatchEvent(new CustomEvent("modalstate", { detail: { open: anyOpen } }));   // カルーセルの自動再生を止める／再開する合図
     }
 
     // 一覧モーダル（その部門の全団体をグリッド表示）
