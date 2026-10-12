@@ -689,11 +689,13 @@
           └─ map/1f.png        ← 校内マップ（2f.png, 3f.png, 4f.png）
 
        ・ファイル名は半角英数字で、大文字小文字も正確に（GitHub Pagesは区別します）
-       ・拡張子は小文字（.jpg .jpeg .png .webp）。画像が無い所は仮画像になります
+       ・拡張子は .jpg .jpeg .png .webp（大文字の .JPG なども可）。画像が無い所は仮画像になります
+       ・うまく表示されないときは、ページのURLの末尾に ?imgcheck を付けて開くと、
+         どの画像が見つかり、どの画像が見つからないか（探している場所）が一覧で出ます
        ・画像は横幅1600px・1MB以下くらいに軽くしておくと表示が速くなります
     ================================================== */
     const IMAGE_FOLDER = "images";
-    const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];   // 探す拡張子（順番に試します）
+    const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "JPG", "JPEG", "PNG", "WEBP"];   // 探す拡張子（順番に試します）
     const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
     const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
 
@@ -737,10 +739,20 @@
 
     // ---------- 画像の自動検出（images フォルダにある画像を探す） ----------
     // 画像が読み込めるか確認（3秒で打ち切り）
-    function probeImage(src) {
+    // 画像ファイルがあるか確認する。
+    // ・通常（GitHub Pagesなど）は HEAD リクエストで「存在するか」だけ確認 → 画像が重くても待たない
+    // ・パソコン上で index.html を直接開いた場合などは、実際に読み込んで確認（最大30秒待つ）
+    async function probeImage(src) {
+      if (location.protocol === "http:" || location.protocol === "https:") {
+        try {
+          const res = await fetch(src, { method: "HEAD", cache: "no-cache" });
+          if (res.ok) return true;
+          if (res.status !== 405 && res.status !== 501) return false;   // 404など＝無い
+        } catch (e) { /* 通信エラーのときは下の方法で確認 */ }
+      }
       return new Promise((resolve) => {
         const img = new Image();
-        const timer = setTimeout(() => resolve(false), 3000);
+        const timer = setTimeout(() => resolve(false), 30000);
         img.onload = () => { clearTimeout(timer); resolve(true); };
         img.onerror = () => { clearTimeout(timer); resolve(false); };
         img.src = src;
@@ -759,12 +771,14 @@
       const jobs = [];
       CATEGORIES.forEach((cat) => cat.items.forEach((item) => {
         jobs.push((async () => {
-          item.src = item.img || (item.file ? await findImage(cat.id, item.file) : "") || dummyImg(cat.id + "-" + item.name);
+          item.found = item.img || (item.file ? await findImage(cat.id, item.file) : "");   // 見つかった画像（無ければ ""）
+          item.src = item.found || dummyImg(cat.id + "-" + item.name);
         })());
       }));
       FLOORS.forEach((f) => {
         jobs.push((async () => {
-          f.src = f.img || (f.file ? await findImage("map", f.file) : "") || mapPlaceholder(f.label);
+          f.found = f.img || (f.file ? await findImage("map", f.file) : "");
+          f.src = f.found || mapPlaceholder(f.label);
         })());
       });
       await Promise.all(jobs);
@@ -1120,7 +1134,8 @@
 
     // ---------- 画像の準備 → 表示の組み立て ----------
     // ① ヒーロー画像を先に読み込み、完了してから文字の演出を開始（文字だけ先に動かない）
-    resolveHero().then((heroSrc) => {
+    const heroPromise = resolveHero();
+    heroPromise.then((heroSrc) => {
       const heroImg = document.getElementById("heroImg");
       const heroBlur = document.getElementById("heroBlur");   // 左右を埋めるぼかし背景
       let usedFallback = false;
@@ -1134,13 +1149,37 @@
       heroImg.src = heroSrc;
       if (heroImg.complete && heroImg.naturalWidth) startHeroAnimation();          // キャッシュ済みの場合
     });
-    setTimeout(() => startHeroAnimation(), 8000);   // 通信が極端に遅くても、8秒後には演出を始める保険
+    setTimeout(() => startHeroAnimation(), 15000);  // 通信が極端に遅くても、15秒後には演出を始める保険
 
     // ② 団体・マップの画像を確認してから、カードとマップを表示
     resolveItems().then(() => {
       buildCategories();
       buildMap();
+      // URLの末尾に ?imgcheck を付けて開いたときだけ、画像の確認結果を表示
+      if (new URLSearchParams(location.search).has("imgcheck")) {
+        heroPromise.then((heroSrc) => showImageCheck(heroSrc !== HERO_FALLBACK));
+      }
     });
+
+    // ---------- 画像チェック表示（?imgcheck） ----------
+    // 見つかった画像（✔）と、見つからなかった画像（✖：探している場所）を一覧にします
+    function showImageCheck(heroFound) {
+      const rows = [[heroFound, "ヒーロー背景", IMAGE_FOLDER + "/hero.jpg"]];
+      CATEGORIES.forEach((cat) => cat.items.forEach((it) =>
+        rows.push([!!it.found, cat.title + "：" + it.name, IMAGE_FOLDER + "/" + cat.id + "/" + it.file + ".jpg"])));
+      FLOORS.forEach((f) => rows.push([!!f.found, "マップ：" + f.label, IMAGE_FOLDER + "/map/" + f.file + ".png"]));
+      const ok = rows.filter((r) => r[0]).length;
+      const box = document.createElement("div");
+      box.style.cssText = "position:fixed;inset:0 auto 0 0;width:min(560px,100%);overflow:auto;z-index:9999;" +
+        "background:rgba(0,0,0,.92);color:#fff;font:13px/1.7 monospace;padding:12px 14px;";
+      box.innerHTML = `<button style="float:right" type="button">閉じる</button>
+        <div><b>画像チェック：${ok} / ${rows.length} 件 見つかりました</b></div>
+        <div style="opacity:.7">✖ は、その場所に画像が無い（またはファイル名・拡張子が違う）状態です</div><hr>` +
+        rows.map((r) => `<div style="color:${r[0] ? "#8f8" : "#f99"}">${r[0] ? "✔" : "✖"} ${r[1]}` +
+          `${r[0] ? "" : "<br>&nbsp;&nbsp;&nbsp;探す場所：" + r[2] + "（.png等も可）"}</div>`).join("");
+      box.querySelector("button").addEventListener("click", () => box.remove());
+      document.body.appendChild(box);
+    }
 
     // ---------- ダーク／ライトモード（OS設定に自動追従） ----------
     // ページを開いたままOSのテーマを変えても、リロードなしで即座に切り替わります。
