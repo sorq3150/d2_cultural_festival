@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html lang="ja" class="is-locked">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
+
+  <!-- ★ヒーロー画像を最優先で読み込む（Preload）。画像の拡張子が .jpg 以外のときは、下の href と
+       <img id="heroImg"> の src を合わせて変更してください（無い場合は自動で別の拡張子や仮画像を探します） -->
+  <link rel="preload" as="image" href="images/hero.jpg" fetchpriority="high">
   <title>第64回 文化祭｜伝承華</title>
 
   <!-- Google Fonts：明朝体（Noto Serif JP） -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400;900&display=swap" rel="stylesheet">
 
   <style>
     /* ==================================================
@@ -66,8 +70,8 @@
       transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    /* スクロールロック（ヒーロー演出中・モーダル表示中） */
-    html.is-locked, html.is-locked body,
+    /* ポップアップ（モーダル）表示中だけ、背面のスクロールを止める。
+       ※ヒーロー演出中のスクロールロックはありません（最初から自由にスクロールできます） */
     html.modal-open, html.modal-open body { overflow: hidden; }
 
     /* ==================================================
@@ -76,8 +80,13 @@
     .hero {
       position: relative;
       width: 100%;          /* 100vw だと縦スクロールバーの幅ぶんはみ出して横スクロールが出るため 100% にしています */
+      /* 初回表示でヒーローだけが画面ぴったりに収まるようにする（アドレスバー・アプリ内ブラウザ対策）
+         ① 100vh：古いブラウザ用  ② --app-h：JSで測った実際に見える高さ（LINE/Instagram等のアプリ内ブラウザ用）
+         ③ 100svh：アドレスバーが出ている状態の高さ。アドレスバーの出入りでヒーローの大きさが
+            変わらないので、画像のチラつきを防げます（dvh を使うとスクロール中に大きさが変わるため svh を採用） */
       height: 100vh;
-      height: 100dvh;
+      height: var(--app-h, 100vh);
+      height: 100svh;
       overflow: hidden;
     }
 
@@ -89,6 +98,8 @@
       height: 100%;
       object-fit: cover;         /* 縦長の画面（スマホ縦）は画面いっぱいに表示 */
       object-position: center;
+      transform: translateZ(0);          /* GPUで描画してチラつきを防ぐ */
+      backface-visibility: hidden;
     }
 
     /* 横長の画面（PC・スマホ横向き）：
@@ -103,7 +114,8 @@
       object-fit: cover;
       object-position: center;
       filter: blur(28px) brightness(0.85);   /* ぼかしの強さ・明るさはここで調整 */
-      transform: scale(1.15);                /* ぼかした縁が見えないよう少し拡大 */
+      transform: scale(1.15) translateZ(0);  /* ぼかした縁が見えないよう少し拡大（GPU描画） */
+      backface-visibility: hidden;
     }
     @media (min-aspect-ratio: 1 / 1) {
       .hero__bg { object-fit: contain; }
@@ -127,6 +139,9 @@
       line-height: 1.8;
       white-space: nowrap;             /* 勝手に折り返さない（改行はHTML内で指定した位置だけ） */
       padding: min(2.5rem, 4vh) min(1.8rem, 3vw);
+      transform: translateZ(0);          /* GPUで描画してチラつきを防ぐ */
+      backface-visibility: hidden;
+      will-change: opacity;
       /* 背景ではなく影で文字を際立たせる（濃さ・広がりはここで調整） */
       text-shadow:
         0 0 4px rgba(0, 0, 0, 0.9),
@@ -152,6 +167,8 @@
       line-height: 1.3;
       letter-spacing: 0.08em;
       white-space: nowrap;
+      backface-visibility: hidden;       /* GPUで描画してチラつきを防ぐ */
+      will-change: transform, opacity;
       -webkit-text-stroke: 1px #000;
       paint-order: stroke fill;
       text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
@@ -251,41 +268,45 @@
       width: max-content;
       /* 左の余白は、中央のカードが真ん中に来るようJavaScriptが自動で設定します */
       will-change: transform;
+      backface-visibility: hidden;
     }
 
     /* カード（ボックス） */
     .card {
-      position: relative;
       flex: 0 0 var(--card-w);
+      margin: 0;
+    }
+    /* 画像の枠（団体名は画像に重ねず、この下に表示します） */
+    .card__img {
+      position: relative;
       aspect-ratio: 4 / 3;          /* 16 / 9 に変えるとより横長になります */
       border: 1px solid var(--card-border);
       border-radius: 6px;
       overflow: hidden;
       background: #333;
     }
-    .card img {
+    .card__img img {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       pointer-events: none;
+      backface-visibility: hidden;
+      opacity: 0;                       /* 読み込み完了まで非表示 → ふわっと表示（チラつき防止） */
+      transition: opacity 0.35s ease;
     }
+    .card__img img.is-ready { opacity: 1; }
     .nb { display: inline-block; white-space: nowrap; }   /* この中では折り返さない */
+    /* 団体名・クラス名（画像の下）。色はダーク/ライトモードに自動で合わせます */
     .card__name {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-top: 0.6rem;
       text-align: center;
-      padding: 1rem;
-      color: #fff;
+      color: var(--text);
       font-weight: 300;
-      font-size: clamp(1.3rem, 2.6vw, 1.8rem);
-      letter-spacing: 0.12em;
-      text-shadow: 0 0 4px #000, 2px 2px 3px #000, -2px 2px 3px #000, 0 3px 10px rgba(0, 0, 0, 0.9);
-      background: linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+      font-size: clamp(1rem, 1.8vw, 1.3rem);
+      letter-spacing: 0.1em;
+      line-height: 1.5;
     }
 
     /* 左右ボタン */
@@ -307,6 +328,8 @@
     }
     .carousel__btn:hover, .carousel__btn:focus-visible { background: rgba(232, 166, 182, 0.85); outline: none; }
     .carousel__btn:disabled, .carousel__btn:disabled:hover { opacity: 0.3; cursor: default; background: rgba(0, 0, 0, 0.55); }
+    /* 矢印ボタンは「画像」の高さの中央に置く（団体名の分は含めない） */
+    .carousel .carousel__btn { top: calc(var(--card-w) * 0.375); }
     .carousel__btn--prev { left: clamp(0.4rem, 1.5vw, 1.2rem); }
     .carousel__btn--next { right: clamp(0.4rem, 1.5vw, 1.2rem); }
 
@@ -399,7 +422,8 @@
     .map__track { display: flex; height: 100%; transition: transform 0.25s ease-out; will-change: transform; }
     .map__track.is-dragging { transition: none; cursor: grabbing; }
     .map__slide { flex: 0 0 100%; height: 100%; }
-    .map__slide img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+    .map__slide img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; }
+    .map__slide img.is-ready { opacity: 1; }
     /* いま表示中の階（左上のバッジ） */
     .map__badge {
       position: absolute;
@@ -452,7 +476,7 @@
       :root { --gap: 10px; }
       /* 「＜すべて表示＞」の一覧：スマホでは2列で表示 */
       .modal__grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-      .modal__grid .card__name { font-size: 1.05rem; letter-spacing: 0.06em; padding: 0.5rem; }
+      .modal__grid .card__name { font-size: 0.95rem; letter-spacing: 0.05em; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -479,9 +503,9 @@
          画像が無いときは仮画像（Unsplash）が表示されます。
          ・heroBlur = 横長画面の左右を埋める「ぼかして拡大した背景」（同じ画像を自動で使用）
          ・heroImg  = メイン画像（横長画面では元の縦横比のまま中央に表示）
-         ※src と alt は下の <script> が自動で設定します -->
+         ※画像が無い／拡張子が違うときは、下の <script> が別の拡張子や仮画像を自動で探します -->
     <img class="hero__bg-blur" id="heroBlur" alt="" aria-hidden="true">
-    <img class="hero__bg" id="heroImg" alt="">
+    <img class="hero__bg" id="heroImg" alt="" src="images/hero.jpg" fetchpriority="high">
     <!-- ▲▲▲ 背景画像ここまで ▲▲▲ -->
 
     <div class="hero__content">
@@ -724,15 +748,16 @@
     // カードに表示する団体名のHTML。wrap があれば、| の位置でだけ折り返す（例：普通科 / 美術部）
     function nameHTML(item) {
       if (!item.wrap) return item.name;
-      // 外側の <span> で包む（.card__name は flex なので、包まないと中身が横に並んだまま折り返さない）
+      // 外側の <span> で包む（折り返し位置を | の所だけにするため）
       return "<span>" + item.wrap.split("|").map((part) => `<span class="nb">${part}</span>`).join("<wbr>") + "</span>";
     }
 
     // カード1枚分のHTMLを作る
     function cardHTML(item, cat, isClone, index) {
-      const src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
+      // 画像の src は、近くに来たとき／ポップアップを開いたときに設定します（hydrateImages）
+      const srcAttr = item.src ? ` src="${item.src}"` : "";
       return `<figure class="card" data-i="${index}"${isClone ? ' aria-hidden="true"' : ''}>
-        <img src="${src}" alt="" draggable="false" loading="lazy">
+        <div class="card__img"><img${srcAttr} alt="" draggable="false" loading="lazy" decoding="async"></div>
         <figcaption class="card__name">${nameHTML(item)}</figcaption>
       </figure>`;
     }
@@ -766,23 +791,53 @@
       }
       return "";
     }
-    // 団体・マップの画像を決める：img指定 → imagesフォルダ → 仮画像 の順
-    async function resolveItems() {
-      const jobs = [];
-      CATEGORIES.forEach((cat) => cat.items.forEach((item) => {
-        jobs.push((async () => {
+    // 団体1件の画像を決める（必要になったときに1回だけ）：img指定 → imagesフォルダ → 仮画像 の順
+    function resolveItemImage(cat, item) {
+      if (!item._p) {
+        item._p = (async () => {
           item.found = item.img || (item.file ? await findImage(cat.id, item.file) : "");   // 見つかった画像（無ければ ""）
           item.src = item.found || dummyImg(cat.id + "-" + item.name);
-        })());
-      }));
-      FLOORS.forEach((f) => {
-        jobs.push((async () => {
+          return item.src;
+        })();
+      }
+      return item._p;
+    }
+    // マップ1階ぶんの画像を決める
+    function resolveFloorImage(f) {
+      if (!f._p) {
+        f._p = (async () => {
           f.found = f.img || (f.file ? await findImage("map", f.file) : "");
           f.src = f.found || mapPlaceholder(f.label);
-        })());
-      });
-      await Promise.all(jobs);
+          return f.src;
+        })();
+      }
+      return f._p;
     }
+    // コンテナ内のカード画像に、実際の src を設定する（まだ設定されていないものだけ）
+    function hydrateImages(container, cat) {
+      container.querySelectorAll(".card").forEach((card) => {
+        const img = card.querySelector("img");
+        if (!img || img.getAttribute("src")) return;
+        resolveItemImage(cat, cat.items[Number(card.dataset.i)]).then((src) => {
+          if (!img.getAttribute("src")) img.src = src;
+        });
+      });
+    }
+    // 画面の近くに来たら fn を1回だけ実行する（ヒーロー画像の読み込みが終わってから）
+    function whenNear(el, fn) {
+      if (!("IntersectionObserver" in window)) { fn(); return; }
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        heroReady.then(fn);
+      }, { rootMargin: "600px 0px" });   // 画面の600px手前から読み込み開始
+      io.observe(el);
+    }
+    // 画像の読み込みが終わったら is-ready を付けて、ふわっと表示する
+    document.addEventListener("load", (e) => {
+      if (e.target.tagName === "IMG") e.target.classList.add("is-ready");
+    }, true);
+
     // ヒーロー（背景）画像を決める：HERO_IMAGE → images/hero.* → 仮画像
     async function resolveHero() {
       return HERO_IMAGE || (await findImage("", "hero")) || HERO_FALLBACK;
@@ -808,8 +863,14 @@
         </div>`;
       root.appendChild(sec);
 
-      setupCarousel(sec.querySelector(".carousel"), cat);
+      const carousel = sec.querySelector(".carousel");
+      setupCarousel(carousel, cat);
       sec.querySelector(".all-btn").addEventListener("click", () => openModal(cat));
+      // この部門の画像は、画面の近くに来てから読み込む（初期表示を軽くするため）
+      whenNear(sec, () => {
+        carousel._active = true;
+        hydrateImages(carousel.querySelector(".carousel__track"), cat);
+      });
     });
     }
 
@@ -853,6 +914,7 @@
         let html = "";
         for (let i = 0; i < copies * 2 + 1; i++) html += setHTML(i !== copies);
         track.innerHTML = html;
+        if (carousel._active) hydrateImages(track, cat);        // 並べ直したときも画像を設定
         base = copies * setW;
         pos = base + index * step;
         tween = null;
@@ -974,7 +1036,7 @@
     const detailText = document.getElementById("detailText");
     const detailImg = document.getElementById("detailImg");
     const detailClose = document.getElementById("detailClose");
-    let modalFocus = null, detailFocus = null, modalCat = null;
+    let modalFocus = null, detailFocus = null, modalCat = null, currentDetail = null;
 
     // どれかのポップアップが開いている間は、背景をスクロールさせない
     function updateScrollLock() {
@@ -989,6 +1051,7 @@
       modalTitle.textContent = cat.title;
       modalGrid.innerHTML = cat.items.map((it, i) => cardHTML(it, cat, false, i)).join("");
       modalGrid.querySelectorAll(".card").forEach((c) => { c.setAttribute("role", "button"); c.tabIndex = 0; });
+      hydrateImages(modalGrid, cat);                         // 一覧を開いたときに初めて画像を読み込む
       modal.classList.add("is-open");
       updateScrollLock();
       modalClose.focus();
@@ -1006,7 +1069,10 @@
       detailSub.textContent = item.title || "";
       detailSub.hidden = !item.title;
       detailText.textContent = item.text || "";
-      detailImg.src = item.src || item.img || dummyImg(cat.id + "-" + item.name);
+      // 詳細の大きな画像は、ポップアップを開いたときに初めて読み込む
+      currentDetail = item;
+      detailImg.removeAttribute("src");
+      resolveItemImage(cat, item).then((src) => { if (currentDetail === item) detailImg.src = src; });
       detailImg.alt = item.name + "の画像";
       detail.classList.add("is-open");
       detail.querySelector(".modal__panel").scrollTop = 0;
@@ -1082,14 +1148,26 @@
       mapPrev.disabled = floorIdx === 0;
       mapNext.disabled = floorIdx === FLOORS.length - 1;
       mapBadge.textContent = FLOORS[floorIdx].tag || FLOORS[floorIdx].label;
+      if (mapActive) loadMapImages();
     }
     function goFloor(i) {
       floorIdx = Math.max(0, Math.min(FLOORS.length - 1, i));
       renderMap();
     }
+    // マップ画像は、マップが画面の近くに来てから、表示中の階と前後1階だけ読み込む
+    let mapActive = false;
+    function loadMapImages() {
+      [floorIdx - 1, floorIdx, floorIdx + 1].forEach((i) => {
+        const f = FLOORS[i];
+        if (!f) return;
+        const img = mapTrack.children[i] && mapTrack.children[i].querySelector("img");
+        if (!img || img.getAttribute("src")) return;
+        resolveFloorImage(f).then((src) => { if (!img.getAttribute("src")) img.src = src; });
+      });
+    }
     function buildMap() {
       mapTrack.innerHTML = FLOORS.map((f) =>
-        `<div class="map__slide"><img src="${f.src || f.img || mapPlaceholder(f.label)}" alt="${f.label}の校内マップ" draggable="false"></div>`
+        `<div class="map__slide"><img alt="${f.label}の校内マップ" draggable="false" decoding="async"></div>`
       ).join("");
       renderMap();
     }
@@ -1132,38 +1210,20 @@
     mapViewport.addEventListener("pointerup", mapEndDrag);
     mapViewport.addEventListener("pointercancel", mapEndDrag);
 
-    // ---------- 画像の準備 → 表示の組み立て ----------
-    // ① ヒーロー画像を先に読み込み、完了してから文字の演出を開始（文字だけ先に動かない）
-    const heroPromise = resolveHero();
-    heroPromise.then((heroSrc) => {
-      const heroImg = document.getElementById("heroImg");
-      const heroBlur = document.getElementById("heroBlur");   // 左右を埋めるぼかし背景
-      let usedFallback = false;
-      heroImg.onload = startHeroAnimation;
-      heroImg.onerror = () => {
-        if (!usedFallback) { usedFallback = true; heroImg.src = HERO_FALLBACK; heroBlur.src = HERO_FALLBACK; }  // 失敗したら仮画像で再挑戦
-        else startHeroAnimation();                                                 // それでも駄目でも演出は始める
-      };
-      heroImg.alt = "文化祭メイン画像";
-      heroBlur.src = heroSrc;
-      heroImg.src = heroSrc;
-      if (heroImg.complete && heroImg.naturalWidth) startHeroAnimation();          // キャッシュ済みの場合
-    });
-    setTimeout(() => startHeroAnimation(), 15000);  // 通信が極端に遅くても、15秒後には演出を始める保険
-
-    // ② 団体・マップの画像を確認してから、カードとマップを表示
-    resolveItems().then(() => {
-      buildCategories();
-      buildMap();
-      // URLの末尾に ?imgcheck を付けて開いたときだけ、画像の確認結果を表示
-      if (new URLSearchParams(location.search).has("imgcheck")) {
-        heroPromise.then((heroSrc) => showImageCheck(heroSrc !== HERO_FALLBACK));
-      }
-    });
+    // ---------- 表示の組み立て ----------
+    // カードとマップの枠は先に作り、画像は「画面の近くに来たとき」に読み込みます（初期表示を軽くするため）
+    buildCategories();
+    buildMap();
+    whenNear(document.getElementById("map"), () => { mapActive = true; loadMapImages(); });
 
     // ---------- 画像チェック表示（?imgcheck） ----------
     // 見つかった画像（✔）と、見つからなかった画像（✖：探している場所）を一覧にします
-    function showImageCheck(heroFound) {
+    async function showImageCheck() {
+      const jobs = [];
+      CATEGORIES.forEach((cat) => cat.items.forEach((it) => jobs.push(resolveItemImage(cat, it))));
+      FLOORS.forEach((f) => jobs.push(resolveFloorImage(f)));
+      await Promise.all(jobs);
+      const heroFound = heroImg.naturalWidth > 0 && heroImg.src !== HERO_FALLBACK;
       const rows = [[heroFound, "ヒーロー背景", IMAGE_FOLDER + "/hero.jpg"]];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) =>
         rows.push([!!it.found, cat.title + "：" + it.name, IMAGE_FOLDER + "/" + cat.id + "/" + it.file + ".jpg"])));
@@ -1194,36 +1254,76 @@
       colorQuery.addListener((e) => applyTheme(e.matches)); // 古いSafari向け
     }
 
-    // ---------- ヒーロー演出＆スクロールロック解除 ----------
-    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-    window.scrollTo(0, 0);
-
+    // ---------- ヒーロー（最優先で読み込み → 完了してから演出開始） ----------
+    // スクロールロックはありません。演出中でも、最初から自由に下へスクロールできます。
     const hero = document.getElementById("hero");
+    const heroImg = document.getElementById("heroImg");
+    const heroBlur = document.getElementById("heroBlur");      // 横長画面で左右を埋めるぼかし背景
     const subtitle = document.getElementById("subtitle");
     const hint = document.getElementById("scrollHint");
-    let unlocked = false;
 
-    function unlockScroll() {
-      if (unlocked) return;
-      unlocked = true;
-      document.documentElement.classList.remove("is-locked"); // スクロール解禁
-      hint.classList.add("is-visible");                       // 「Scroll ↓」表示
+    // スマホの「見える高さ」を測って --app-h に入れる（svh非対応のアプリ内ブラウザ用）。
+    // アドレスバーの出入り（高さだけの変化）では更新せず、画像のチラつきを防ぐ
+    let lastW = 0;
+    function setAppHeight(force) {
+      if (!force && window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      document.documentElement.style.setProperty("--app-h", window.innerHeight + "px");
     }
+    setAppHeight(true);
+    window.addEventListener("resize", () => setAppHeight(false));
 
-    // 背景画像の読み込みが終わってから呼ばれる（何度呼ばれても1回だけ実行）
+    // ヒーロー画像の読み込みが終わった（または失敗が確定した）ら解決される。団体画像の読み込みはこの後に始まる
+    let heroReadyResolve;
+    const heroReady = new Promise((resolve) => { heroReadyResolve = resolve; });
     let heroStarted = false;
     function startHeroAnimation() {
       if (heroStarted) return;
       heroStarted = true;
-      hero.classList.add("is-loaded");
-      // サブタイトルのアニメーション終了でスクロール解禁（念のため保険タイマーも設定）
-      subtitle.addEventListener("animationend", unlockScroll);
-      setTimeout(unlockScroll, 4500);
+      heroReadyResolve();
+      hero.classList.add("is-loaded");                       // タイトルのアニメーション開始
+      subtitle.addEventListener("animationend", showScrollHint);
+      setTimeout(showScrollHint, 4500);                      // 念のための保険
     }
 
+    // 「Scroll ↓」：演出が終わった時点で、まだ一番上にいるときだけ表示。スクロールしたら消す
+    let hintDone = false;
+    function showScrollHint() {
+      if (!hintDone && window.scrollY < 40) hint.classList.add("is-visible");
+    }
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 40) { hintDone = true; hint.classList.remove("is-visible"); }
+    }, { passive: true });
     hint.addEventListener("click", () => {
       document.getElementById("categories").scrollIntoView({ behavior: "smooth" });
     });
+
+    // ぼかし背景は横長画面のときだけ読み込む（縦長のスマホでは無駄に読み込まない）
+    const landscapeQuery = window.matchMedia("(min-aspect-ratio: 1 / 1)");
+    function syncBlur() {
+      if (landscapeQuery.matches && heroImg.naturalWidth && heroBlur.getAttribute("src") !== heroImg.src) {
+        heroBlur.src = heroImg.src;
+      }
+    }
+    if (landscapeQuery.addEventListener) landscapeQuery.addEventListener("change", syncBlur);
+
+    let heroRetried = false;
+    function heroLoaded() { syncBlur(); startHeroAnimation(); }
+    function heroFailed() {
+      if (heroRetried) { startHeroAnimation(); return; }       // 仮画像でも駄目なら、演出だけ始める
+      heroRetried = true;
+      // images/hero.jpg が無い → 他の拡張子を探す → それも無ければ仮画像
+      resolveHero().then((src) => { heroImg.src = src; });
+    }
+    heroImg.alt = "文化祭メイン画像";
+    heroImg.addEventListener("load", heroLoaded);
+    heroImg.addEventListener("error", heroFailed);
+    if (HERO_IMAGE) heroImg.src = HERO_IMAGE;                  // URLを直接指定している場合
+    else if (heroImg.complete) { heroImg.naturalWidth ? heroLoaded() : heroFailed(); }   // 既に読み込み済み／失敗済み
+    setTimeout(startHeroAnimation, 15000);                     // 通信が極端に遅くても、15秒後には演出を始める保険
+
+    // URLの末尾に ?imgcheck を付けて開いたときだけ、画像の確認結果を表示
+    if (new URLSearchParams(location.search).has("imgcheck")) heroReady.then(showImageCheck);
   </script>
 </body>
 </html>
