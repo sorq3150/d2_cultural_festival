@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="is-locked">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
+
+  <!-- リロード・戻る操作でも、前回のスクロール位置を復元せず、必ず最上部から始める -->
+  <script>if ("scrollRestoration" in history) history.scrollRestoration = "manual";</script>
 
   <!-- ★ヒーロー画像を最優先で読み込む（Preload）。画像の拡張子が .jpg 以外のときは、下の href と
        <img id="heroImg"> の src を合わせて変更してください（無い場合は自動で別の拡張子や仮画像を探します） -->
@@ -70,8 +73,10 @@
       transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    /* ポップアップ（モーダル）表示中だけ、背面のスクロールを止める。
-       ※ヒーロー演出中のスクロールロックはありません（最初から自由にスクロールできます） */
+    /* スクロールを止める場合：
+       ・is-locked   … ページを開いてから、縦書きタイトルの表示が完了するまで
+       ・modal-open  … ポップアップ（モーダル）表示中 */
+    html.is-locked, html.is-locked body,
     html.modal-open, html.modal-open body { overflow: hidden; }
 
     /* ==================================================
@@ -198,9 +203,12 @@
     .scroll-hint.is-visible { opacity: 1; pointer-events: auto; }
     .scroll-hint span { display: inline-block; animation: bob 1.6s ease-in-out infinite; }
 
-    /* アニメーション（①0.3s後から2.5秒 → ②2.8s後から0.9秒） */
-    .is-loaded .title-vertical   { animation: fadeIn 2.5s ease-out 0.3s forwards; }
-    .is-loaded .title-horizontal { animation: slideInFromLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2.8s forwards; }
+    /* アニメーションの流れ
+       ① 背景画像の読み込み完了 → 縦書きタイトルが 1.1秒でフェードイン（0.2秒後に開始）
+       ② 縦書きの表示が完了した瞬間（JSが .is-title-done を付ける）に、
+          ・スクロール解禁  ・横書きサブタイトルが左からスライドイン  ・「Scroll ↓」表示 を同時に行う */
+    .is-loaded .title-vertical        { animation: fadeIn 1.1s ease-out 0.2s forwards; }
+    .is-title-done .title-horizontal  { animation: slideInFromLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideInFromLeft {
@@ -480,7 +488,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .is-loaded .title-vertical, .is-loaded .title-horizontal { animation-duration: 0.01s; animation-delay: 0s; }
+      .is-loaded .title-vertical, .is-title-done .title-horizontal { animation-duration: 0.01s; animation-delay: 0s; }
       .scroll-hint span { animation: none; }
     }
 
@@ -1266,8 +1274,12 @@
     const hero = document.getElementById("hero");
     const heroImg = document.getElementById("heroImg");
     const heroBlur = document.getElementById("heroBlur");      // 横長画面で左右を埋めるぼかし背景
-    const subtitle = document.getElementById("subtitle");
+    const titleVertical = document.querySelector(".title-vertical");
     const hint = document.getElementById("scrollHint");
+
+    // リロードしても必ず最上部から始める（アニメーションも最初から再生される）
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 
     // スマホの「見える高さ」を測って --app-h に入れる（svh非対応のアプリ内ブラウザ用）。
     // アドレスバーの出入り（高さだけの変化）では更新せず、画像のチラつきを防ぐ
@@ -1288,12 +1300,22 @@
       if (heroStarted) return;
       heroStarted = true;
       heroReadyResolve();
-      hero.classList.add("is-loaded");                       // タイトルのアニメーション開始
-      subtitle.addEventListener("animationend", showScrollHint);
-      setTimeout(showScrollHint, 4500);                      // 念のための保険
+      hero.classList.add("is-loaded");                       // 縦書きタイトルのフェードイン開始
+      titleVertical.addEventListener("animationend", titleFinished);
+      setTimeout(titleFinished, 2500);                       // 念のための保険（フェードインは約1.3秒で終わる）
     }
 
-    // 「Scroll ↓」：演出が終わった時点で、まだ一番上にいるときだけ表示。スクロールしたら消す
+    // 縦書きタイトルの表示が完了した瞬間：スクロール解禁 ＋ サブタイトルと「Scroll ↓」を同時に表示
+    let titleDone = false;
+    function titleFinished() {
+      if (titleDone) return;
+      titleDone = true;
+      document.documentElement.classList.remove("is-locked");   // スクロール解禁（以降は演出中もスクロール可能）
+      hero.classList.add("is-title-done");                      // 横書きサブタイトルのスライドイン開始
+      showScrollHint();                                         // 「Scroll ↓」を表示
+    }
+
+    // 「Scroll ↓」：まだ一番上にいるときだけ表示。スクロールしたら消す
     let hintDone = false;
     function showScrollHint() {
       if (!hintDone && window.scrollY < 40) hint.classList.add("is-visible");
@@ -1327,7 +1349,7 @@
     heroImg.addEventListener("error", heroFailed);
     if (HERO_IMAGE) heroImg.src = HERO_IMAGE;                  // URLを直接指定している場合
     else if (heroImg.complete) { heroImg.naturalWidth ? heroLoaded() : heroFailed(); }   // 既に読み込み済み／失敗済み
-    setTimeout(startHeroAnimation, 15000);                     // 通信が極端に遅くても、15秒後には演出を始める保険
+    setTimeout(startHeroAnimation, 8000);                      // 通信が極端に遅くても、8秒後には演出を始める保険（それまでスクロールは固定）
 
     // URLの末尾に ?imgcheck を付けて開いたときだけ、画像の確認結果を表示
     if (new URLSearchParams(location.search).has("imgcheck")) heroReady.then(showImageCheck);
