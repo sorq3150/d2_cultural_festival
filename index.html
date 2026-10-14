@@ -502,6 +502,63 @@
       .modal__grid .card__name { font-size: 0.95rem; letter-spacing: 0.05em; }
     }
 
+    /* ==================================================
+       フッター
+    ================================================== */
+    .footer {
+      border-top: 1px solid var(--card-border);
+      background: var(--ink-soft);
+      padding: clamp(2rem, 6vw, 3.5rem) var(--pad) calc(clamp(1.5rem, 4vw, 2.5rem) + env(safe-area-inset-bottom, 0px));
+    }
+    .footer__inner { max-width: 1100px; margin: 0 auto; }
+    .footer__school { display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 3vw, 1.8rem); }
+    .footer__emblem {
+      flex: none;
+      width: clamp(64px, 10vw, 88px);
+      aspect-ratio: 1 / 1;
+      object-fit: contain;               /* 校章は歪めず全体を表示 */
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .footer__emblem.is-ready { opacity: 1; }
+    .footer__info { font-size: 0.95rem; line-height: 1.9; letter-spacing: 0.04em; }
+    .footer__info a { color: inherit; }
+    .footer__name { font-size: clamp(1.15rem, 2.4vw, 1.45rem); letter-spacing: 0.1em; line-height: 1.5; }
+    .footer__name span { display: block; font-size: 0.8rem; letter-spacing: 0.04em; opacity: 0.8; }
+    .footer__admin { margin-top: 0.4rem; font-size: 0.85rem; opacity: 0.85; }
+
+    /* リンクバナー：PC=横5つ／スマホ=縦5つ */
+    .footer__banners {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.8rem;
+      margin-top: clamp(1.8rem, 5vw, 2.8rem);
+    }
+    .footer__banners a {
+      display: block;
+      aspect-ratio: 10 / 3;              /* バナーの縦横比。変えたいときはここ */
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--ink);
+      transition: border-color 0.2s;
+    }
+    .footer__banners a:hover, .footer__banners a:focus-visible { border-color: var(--sakura); outline: none; }
+    .footer__banners img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;               /* バナーは切り取らず全体を表示 */
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .footer__banners img.is-ready { opacity: 1; }
+    @media (max-width: 767px) {
+      .footer__school { flex-direction: column; text-align: center; }
+      .footer__banners { grid-template-columns: 1fr; max-width: 480px; margin-left: auto; margin-right: auto; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .is-loaded .title-vertical, .is-title-done .title-horizontal { animation-duration: 0.01s; animation-delay: 0s; }
       .scroll-hint span { animation: none; }
@@ -570,6 +627,29 @@
       <button class="carousel__btn carousel__btn--next" id="mapNext" type="button" aria-label="次の階">＞</button>
     </div>
   </section>
+
+  <!-- ==================================================
+       フッター（校章・学校情報・リンクバナー）
+       ・校章／バナー画像の差し替え：images/footer/ に emblem.png, banner1.jpg 〜 banner5.jpg を置く
+         （詳しくは下の <script> 内「★フッターの設定」）
+       ・校名・住所・連絡先・管理者の文言は、下の HTML をそのまま書き換えてください
+  ================================================== -->
+  <footer class="footer" id="footer">
+    <div class="footer__inner">
+      <div class="footer__school">
+        <!-- ▼ 校章マーク（仮画像）。images/footer/emblem.png を置くと自動で差し替わります -->
+        <img class="footer__emblem" id="footerEmblem" alt="熊本県立第二高等学校 校章" decoding="async">
+        <div class="footer__info">
+          <p class="footer__name">熊本県立第二高等学校<span>Kumamoto Prefectural Daini High School</span></p>
+          <p>〒862-0901 熊本県熊本市東区東町3-13-1</p>
+          <p>TEL : <a href="tel:0963684125">096-368-4125</a>&emsp;FAX : 096-365-5636</p>
+          <p class="footer__admin">管理者：管理者 生徒会 | システム管理者 生徒会広報担当者</p>
+        </div>
+      </div>
+      <!-- ▼ リンクバナー5つ（PC=横並び／スマホ=縦並び）。中身は <script> の FOOTER_BANNERS から自動生成 -->
+      <ul class="footer__banners" id="footerBanners"></ul>
+    </div>
+  </footer>
 
   <!-- ==================================================
        3. 「すべて表示」モーダル（中身はJavaScriptで入れ替わります）
@@ -693,6 +773,11 @@
       {
         id: "club",
         title: "部活動",
+        // 「＜すべて表示＞」の一覧のサブタイトル（上から順に表示）
+        groups: [
+          { title: "食バザー", names: ["調理同好会", "茶道部"] },
+          { title: "展示",     names: ["化学部", "物理部", "生物部", "地学部", "写真部", "普通科美術部", "美術科美術部", "英語部", "書道部", "放送部"] }
+        ],
         items: [
           // ▼ 部活動の画像差し替え箇所（images/club/ファイル名.jpg を置くと自動表示）
           { name: "化学部", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", img: "" },
@@ -712,6 +797,13 @@
       {
         id: "other",
         title: "その他団体",
+        // 「＜すべて表示＞」の一覧のサブタイトル（上から順に表示）
+        groups: [
+          { title: "展示",     names: ["書道選択者", "美術選択者", "図書委員会", "家庭クラブ"] },
+          { title: "食バザー", names: ["育竜会", "売店"] },
+          { title: "販売",     names: ["りんどう会"] },
+          { title: "ステージ", names: ["生徒会"] }
+        ],
         items: [
           // ▼ その他団体の画像差し替え箇所（images/other/ファイル名.jpg を置くと自動表示）
           { name: "生徒会", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", img: "" },
@@ -721,7 +813,7 @@
           { name: "家庭クラブ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", img: "" },
           { name: "育竜会", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", img: "" },
           { name: "りんどう会", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", img: "" },
-          { name: "売店", file: "shop", title: "", text: "売店の紹介文です。（※仮の文章です。差し替えてください）", img: "" }
+          { name: "売店", file: "shop", title: "幻の手作りクッキー☆", text: "挽きたてコーヒー即完売！！幻の手作りクッキーを数種類販売。人気すぎて買えてない人！推しクッキーのある人！！当日のお楽しみに♡", img: "" }
         ]
       }
     ];
@@ -769,6 +861,24 @@
     const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "JPG", "JPEG", "PNG", "WEBP"];   // 探す拡張子（順番に試します）
     const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
     const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
+
+    /* ==================================================
+       ★フッターの設定
+       ■ 校章・バナー画像の差し替え（かんたん）：
+           images/footer/emblem.png    ← 校章マーク
+           images/footer/banner1.jpg 〜 banner5.jpg ← バナー（左から／上から順）
+           （.jpg .jpeg .png .webp に対応／無ければ仮画像）
+         ※img にURLを書くと、そちらが優先されます。
+       ■ リンク先：url を書き換える。label はバナーの説明（画像の代替テキスト）
+    ================================================== */
+    const FOOTER_EMBLEM = { file: "emblem", img: "" };
+    const FOOTER_BANNERS = [
+      { label: "熊本県立第二高等学校 公式サイト", url: "https://kumamoto-d2hs.ed.jp/",       file: "banner1", img: "" },
+      { label: "Instagram（d2_daini）",           url: "https://www.instagram.com/d2_daini/", file: "banner2", img: "" },
+      { label: "ビッグスカイ高校",                 url: "https://bigsky.mcpsmt.org/",          file: "banner3", img: "" },
+      { label: "同窓会 りんどう会",                 url: "https://www.rindoukai.net/",          file: "banner4", img: "" },
+      { label: "科学技術振興機構（JST）",           url: "https://www.jst.go.jp/",              file: "banner5", img: "" }
+    ];
 
     /* 自動スライドの間隔（ミリ秒）。4000〜5000が目安 */
     const AUTO_SLIDE_MS = 4500;
@@ -1285,18 +1395,47 @@
     buildMap();
     whenNear(document.getElementById("map"), () => { mapActive = true; loadMapImages(); });
 
+    // ---------- フッター（校章・リンクバナー） ----------
+    // 仮の校章・バナー画像（SVG）
+    function footerPlaceholder(kind, label) {
+      const svg = kind === "emblem"
+        ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#e9e4ea" stroke="#9a93a0" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="22" fill="#6d6673" font-family="serif">校章</text></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 90"><rect width="300" height="90" fill="#e9e4ea"/><text x="150" y="52" text-anchor="middle" font-size="18" fill="#6d6673" font-family="serif">${label}（仮）</text></svg>`;
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+    // バナーのリンクを作る（画像は近くに来てから読み込む）
+    document.getElementById("footerBanners").innerHTML = FOOTER_BANNERS.map((b) =>
+      `<li><a href="${b.url}" target="_blank" rel="noopener noreferrer" aria-label="${b.label}"><img alt="${b.label}" loading="lazy" decoding="async"></a></li>`
+    ).join("");
+    // 校章・バナー画像を決めて設定する：img指定 → images/footer/ → 仮画像
+    async function loadFooterImages() {
+      const set = async (obj, imgEl, fallback) => {
+        obj.found = obj.img || await findImage("footer", obj.file);
+        imgEl.src = obj.found || fallback;
+      };
+      const imgs = document.querySelectorAll("#footerBanners img");
+      await Promise.all([
+        set(FOOTER_EMBLEM, document.getElementById("footerEmblem"), footerPlaceholder("emblem")),
+        ...FOOTER_BANNERS.map((b, i) => set(b, imgs[i], footerPlaceholder("banner", "バナー" + (i + 1))))
+      ]);
+    }
+    whenNear(document.getElementById("footer"), loadFooterImages);
+
     // ---------- 画像チェック表示（?imgcheck） ----------
     // 見つかった画像（✔）と、見つからなかった画像（✖：探している場所）を一覧にします
     async function showImageCheck() {
       const jobs = [];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) => jobs.push(resolveItemImage(cat, it))));
       FLOORS.forEach((f) => jobs.push(resolveFloorImage(f)));
+      jobs.push(loadFooterImages());
       await Promise.all(jobs);
       const heroFound = heroImg.naturalWidth > 0 && heroImg.src !== HERO_FALLBACK;
       const rows = [[heroFound, "ヒーロー背景", IMAGE_FOLDER + "/hero.jpg"]];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) =>
         rows.push([!!it.found, cat.title + "：" + it.name, IMAGE_FOLDER + "/" + cat.id + "/" + it.file + ".jpg"])));
       FLOORS.forEach((f) => rows.push([!!f.found, "マップ：" + f.label, IMAGE_FOLDER + "/map/" + f.file + ".png"]));
+      rows.push([!!FOOTER_EMBLEM.found, "フッター：校章", IMAGE_FOLDER + "/footer/" + FOOTER_EMBLEM.file + ".png"]);
+      FOOTER_BANNERS.forEach((b) => rows.push([!!b.found, "フッター：" + b.label, IMAGE_FOLDER + "/footer/" + b.file + ".jpg"]));
       const ok = rows.filter((r) => r[0]).length;
       const box = document.createElement("div");
       box.style.cssText = "position:fixed;inset:0 auto 0 0;width:min(560px,100%);overflow:auto;z-index:9999;" +
