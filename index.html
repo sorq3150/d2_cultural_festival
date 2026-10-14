@@ -395,6 +395,18 @@
       gap: 0.8rem;
     }
     .modal__grid .card { flex: none; }
+    /* 一覧のグループ見出し（体育館(ステージ)／中庭 など）。グリッド全幅を使う */
+    .modal__group {
+      grid-column: 1 / -1;
+      margin-top: 0.8rem;
+      padding-left: 0.6rem;
+      border-left: 3px solid var(--sakura);
+      font-size: 1.1rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      line-height: 1.4;
+    }
+    .modal__group:first-child { margin-top: 0; }
 
     /* ==================================================
        4. 校内マップ（階層選択）
@@ -607,6 +619,9 @@
            title = 企画名（詳細ポップアップの見出し下に表示。不要なら "" ）
            text  = 紹介文（詳細ポップアップの中ほどに表示）
            img   = 画像URLを直接指定したいときだけ（通常は "" のまま）
+       ■ 一覧のグループ分け（任意）：カテゴリに groups を書くと、「＜すべて表示＞」の一覧が
+           サブタイトル付きで分かれます。{ title: "見出し", names: ["団体名", …] } を並べる（name と同じ表記）。
+           groups に書かなかった団体は、最後にまとめて表示されます。不要なら書かなくてOK
        ■ 団体の追加：items の中に { name: "団体名", file: "半角英数", title: "企画名", text: "紹介文", img: "" } を1行足す
        ■ カテゴリ（5つ目以降）の追加：下の配列の最後に
            { id: "xxx", title: "カテゴリ名", items: [ ... ] },
@@ -657,6 +672,11 @@
       {
         id: "yushi",
         title: "有志発表",
+        // 「＜すべて表示＞」の一覧だけ、この見出しでグループ分けして表示（スライダーの並びは変わりません）
+        groups: [
+          { title: "体育館(ステージ)", names: ["grows", "金木犀", "SONMINS", "24時30分", "ロングヘア"] },
+          { title: "中庭",             names: ["いぬやさい", "かにクラブ", "GIRLs", "ニコLOVE"] }
+        ],
         items: [
           // ▼ 有志発表の画像差し替え箇所（images/yushi/ファイル名.jpg を置くと自動表示）
           { name: "grows", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", img: "" },
@@ -1083,7 +1103,22 @@
       modalFocus = document.activeElement;
       modalCat = cat;
       modalTitle.textContent = cat.title;
-      modalGrid.innerHTML = cat.items.map((it, i) => cardHTML(it, cat, false, i)).join("");
+      if (cat.groups) {
+        // グループ分けあり：サブタイトル → その団体のカード、の順に並べる
+        const used = new Set();
+        const cardOf = (name) => {
+          const i = cat.items.findIndex((it) => it.name === name);
+          return i < 0 ? "" : cardHTML(cat.items[i], cat, false, i);
+        };
+        let html = cat.groups.map((g) => {
+          g.names.forEach((n) => used.add(n));
+          return `<h3 class="modal__group">${g.title}</h3>` + g.names.map(cardOf).join("");
+        }).join("");
+        html += cat.items.map((it, i) => (used.has(it.name) ? "" : cardHTML(it, cat, false, i))).join("");   // groupsに無い団体は最後に
+        modalGrid.innerHTML = html;
+      } else {
+        modalGrid.innerHTML = cat.items.map((it, i) => cardHTML(it, cat, false, i)).join("");
+      }
       modalGrid.querySelectorAll(".card").forEach((c) => { c.setAttribute("role", "button"); c.tabIndex = 0; });
       hydrateImages(modalGrid, cat);                         // 一覧を開いたときに初めて画像を読み込む
       modal.classList.add("is-open");
