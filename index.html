@@ -511,7 +511,14 @@
       padding: clamp(2rem, 6vw, 3.5rem) var(--pad) calc(clamp(1.5rem, 4vw, 2.5rem) + env(safe-area-inset-bottom, 0px));
     }
     .footer__inner { max-width: 1100px; margin: 0 auto; }
-    .footer__school { display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 3vw, 1.8rem); }
+    /* 校章は学校名などの文字の上・中央。文字情報はすべて中央揃え */
+    .footer__school {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(0.8rem, 2vw, 1.2rem);
+      text-align: center;
+    }
     .footer__emblem {
       flex: none;
       width: clamp(64px, 10vw, 88px);
@@ -521,7 +528,7 @@
       transition: opacity 0.35s ease;
     }
     .footer__emblem.is-ready { opacity: 1; }
-    .footer__info { font-size: 0.95rem; line-height: 1.9; letter-spacing: 0.04em; }
+    .footer__info { font-size: 0.95rem; line-height: 1.9; letter-spacing: 0.04em; text-align: center; }
     .footer__info a { color: inherit; }
     .footer__name { font-size: clamp(1.15rem, 2.4vw, 1.45rem); letter-spacing: 0.1em; line-height: 1.5; }
     .footer__name span { display: block; font-size: 0.8rem; letter-spacing: 0.04em; opacity: 0.8; }
@@ -537,7 +544,7 @@
     }
     .footer__banners a {
       display: block;
-      aspect-ratio: 10 / 3;              /* バナーの縦横比。変えたいときはここ */
+      aspect-ratio: 10 / 3;              /* 横長バナー（約3.3:1）の枠。PCでは幅約200px×高さ約60px。変えたいときはここ */
       border: 1px solid var(--card-border);
       border-radius: 6px;
       overflow: hidden;
@@ -549,14 +556,13 @@
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: contain;               /* バナーは切り取らず全体を表示 */
+      object-fit: cover;                 /* 枠にぴったり合わせる（歪みなし）。比率が違う画像で端を切りたくない場合は contain に */
       opacity: 0;
       transition: opacity 0.35s ease;
     }
     .footer__banners img.is-ready { opacity: 1; }
     @media (max-width: 767px) {
-      .footer__school { flex-direction: column; text-align: center; }
-      .footer__banners { grid-template-columns: 1fr; max-width: 480px; margin-left: auto; margin-right: auto; }
+      .footer__banners { grid-template-columns: 1fr; max-width: 320px; margin-left: auto; margin-right: auto; }   /* スマホは縦並び */
     }
 
     @media (prefers-reduced-motion: reduce) {
