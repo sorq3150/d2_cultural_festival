@@ -284,6 +284,18 @@
       flex: 0 0 var(--card-w);
       margin: 0;
     }
+    /* ▼ 画像の枠と比率が違うとき：画像は切らずに全体を表示し、余った上下／左右には
+         同じ画像を「ぼかして拡大」した背景を敷く。背景の画像URL(--bg)は、画像の読み込み完了時にJSが設定します */
+    .blurbg { position: relative; overflow: hidden; }
+    .blurbg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--bg) center / cover no-repeat;
+      filter: blur(14px);                /* ぼかしの強さ */
+      transform: scale(1.3);             /* ぼかした縁が見えないよう拡大 */
+    }
+
     /* 画像の枠（団体名は画像に重ねず、この下に表示します） */
     .card__img {
       position: relative;
@@ -298,8 +310,8 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;                /* 画像の縦横比が違っても、歪めず・はみ出さず、枠いっぱいに表示（はみ出し部分はカット） */
-      object-position: center;          /* 切り取りの基準位置（上寄せにしたいときは center top） */
+      object-fit: contain;              /* 画像は切らずに全体を表示（余白はぼかし背景で埋める） */
+      object-position: center;
       max-width: 100%;
       pointer-events: none;
       backface-visibility: hidden;
@@ -444,7 +456,7 @@
     .map__track { display: flex; height: 100%; transition: transform 0.25s ease-out; will-change: transform; }
     .map__track.is-dragging { transition: none; cursor: grabbing; }
     .map__slide { flex: 0 0 100%; height: 100%; }
-    .map__slide img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; }
+    .map__slide img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; }
     .map__slide img.is-ready { opacity: 1; }
     /* いま表示中の階（左上のバッジ） */
     .map__badge {
@@ -482,17 +494,23 @@
       letter-spacing: 0.04em;
       font-weight: 400;
     }
-    .detail__img {
-      display: block;
+    .detail__box {
       width: 100%;
       aspect-ratio: 297 / 210;      /* 詳細の画像もA4横向き */
       max-height: 70vh;
       margin-top: 1.6rem;
       border: 1px solid var(--card-border);
       border-radius: 6px;
-      object-fit: cover;                /* 詳細の大きな画像も、歪めず枠にフィット */
-      object-position: center;
       background: #333;
+    }
+    .detail__img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;          /* 切らずに全体を表示（余白はぼかし背景） */
+      object-position: center;
     }
 
     @media (max-width: 767px) {
@@ -538,13 +556,14 @@
     .footer__banners {
       list-style: none;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 200px));   /* PC：幅200px（狭い画面では自動で縮む） */
+      justify-content: center;
       gap: 0.8rem;
       margin-top: clamp(1.8rem, 5vw, 2.8rem);
     }
     .footer__banners a {
       display: block;
-      aspect-ratio: 10 / 3;              /* 横長バナー（約3.3:1）の枠。PCでは幅約200px×高さ約60px。変えたいときはここ */
+      aspect-ratio: 200 / 46;            /* 横長バナーの枠（幅200:高さ46）。大きさ・比率を変えたいときはここと上の 200px */
       border: 1px solid var(--card-border);
       border-radius: 6px;
       overflow: hidden;
@@ -556,13 +575,14 @@
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;                 /* 枠にぴったり合わせる（歪みなし）。比率が違う画像で端を切りたくない場合は contain に */
+      position: relative;
+      object-fit: contain;               /* 切らずに全体を表示。比率が違う分はぼかし背景で埋める */
       opacity: 0;
       transition: opacity 0.35s ease;
     }
     .footer__banners img.is-ready { opacity: 1; }
     @media (max-width: 767px) {
-      .footer__banners { grid-template-columns: 1fr; max-width: 320px; margin-left: auto; margin-right: auto; }   /* スマホは縦並び */
+      .footer__banners { grid-template-columns: 1fr; max-width: 360px; margin-left: auto; margin-right: auto; }   /* スマホは縦並び */
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -683,7 +703,9 @@
       </div>
       <p class="detail__sub" id="detailSub"></p>
       <p class="detail__text" id="detailText"></p>
-      <img class="detail__img" id="detailImg" alt="">
+      <div class="detail__box blurbg">
+        <img class="detail__img" id="detailImg" alt="">
+      </div>
     </div>
   </div>
 
@@ -920,7 +942,7 @@
       // 画像の src は、近くに来たとき／ポップアップを開いたときに設定します（hydrateImages）
       const srcAttr = item.src ? ` src="${item.src}"` : "";
       return `<figure class="card" data-i="${index}"${isClone ? ' aria-hidden="true"' : ''}>
-        <div class="card__img"><img${srcAttr} alt="" draggable="false" loading="lazy" decoding="async"></div>
+        <div class="card__img blurbg"><img${srcAttr} alt="" draggable="false" loading="lazy" decoding="async"></div>
         <figcaption class="card__name">${nameHTML(item)}</figcaption>
       </figure>`;
     }
@@ -997,8 +1019,17 @@
       io.observe(el);
     }
     // 画像の読み込みが終わったら is-ready を付けて、ふわっと表示する
+    // あわせて、枠（.blurbg）と画像の縦横比が違うときは、同じ画像をぼかして背景に敷く（--bg を設定）
     document.addEventListener("load", (e) => {
-      if (e.target.tagName === "IMG") e.target.classList.add("is-ready");
+      const img = e.target;
+      if (img.tagName !== "IMG") return;
+      img.classList.add("is-ready");
+      const box = img.closest(".blurbg");
+      if (!box || !img.naturalWidth) return;
+      const boxRatio = box.clientHeight ? box.clientWidth / box.clientHeight : 0;
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      if (boxRatio && Math.abs(imgRatio / boxRatio - 1) < 0.04) { box.style.removeProperty("--bg"); return; }   // ほぼ同じ比率なら背景は不要
+      box.style.setProperty("--bg", `url("${img.currentSrc || img.src}")`);
     }, true);
 
     // ヒーロー（背景）画像を決める：HERO_IMAGE → images/hero.* → 仮画像
@@ -1256,6 +1287,7 @@
       detailText.textContent = item.text || "";
       // 詳細の大きな画像は、ポップアップを開いたときに初めて読み込む
       currentDetail = item;
+      detailImg.parentElement.style.removeProperty("--bg");   // 前の画像のぼかし背景を消す
       detailImg.removeAttribute("src");
       resolveItemImage(cat, item).then((src) => { if (currentDetail === item) detailImg.src = src; });
       detailImg.alt = item.name + "の画像";
@@ -1296,7 +1328,7 @@
     // ---------- 校内マップ（スライダー） ----------
     // 仮のマップ画像（img が空のときに使うSVG）
     function mapPlaceholder(label) {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
         <rect width="800" height="500" fill="#e9e4ea"/>
         <g fill="none" stroke="#9a93a0" stroke-width="3">
           <rect x="40" y="40" width="720" height="420"/>
@@ -1352,7 +1384,7 @@
     }
     function buildMap() {
       mapTrack.innerHTML = FLOORS.map((f) =>
-        `<div class="map__slide"><img alt="${f.label}の校内マップ" draggable="false" decoding="async"></div>`
+        `<div class="map__slide blurbg"><img alt="${f.label}の校内マップ" draggable="false" decoding="async"></div>`
       ).join("");
       renderMap();
     }
@@ -1406,12 +1438,12 @@
     function footerPlaceholder(kind, label) {
       const svg = kind === "emblem"
         ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#e9e4ea" stroke="#9a93a0" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="22" fill="#6d6673" font-family="serif">校章</text></svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 90"><rect width="300" height="90" fill="#e9e4ea"/><text x="150" y="52" text-anchor="middle" font-size="18" fill="#6d6673" font-family="serif">${label}（仮）</text></svg>`;
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="46" viewBox="0 0 200 46"><rect width="200" height="46" fill="#e9e4ea"/><text x="100" y="28" text-anchor="middle" font-size="12" fill="#6d6673" font-family="serif">${label}（仮）</text></svg>`;
       return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     }
     // バナーのリンクを作る（画像は近くに来てから読み込む）
     document.getElementById("footerBanners").innerHTML = FOOTER_BANNERS.map((b) =>
-      `<li><a href="${b.url}" target="_blank" rel="noopener noreferrer" aria-label="${b.label}"><img alt="${b.label}" loading="lazy" decoding="async"></a></li>`
+      `<li><a class="blurbg" href="${b.url}" target="_blank" rel="noopener noreferrer" aria-label="${b.label}"><img alt="${b.label}" loading="lazy" decoding="async"></a></li>`
     ).join("");
     // 校章・バナー画像を決めて設定する：img指定 → images/footer/ → 仮画像
     async function loadFooterImages() {
