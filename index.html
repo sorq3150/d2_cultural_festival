@@ -9,7 +9,7 @@
   <script>if ("scrollRestoration" in history) history.scrollRestoration = "manual";</script>
 
   <!-- ★ヒーロー画像を最優先で読み込む（Preload）。画像の拡張子が .jpg 以外のときは、下の href と
-       <img id="heroImg"> の src を合わせて変更してください（無い場合は自動で別の拡張子や仮画像を探します） -->
+       <img id="heroImg"> の src を合わせて変更してください（無い場合は自動で別の拡張子を探し、それも無ければ画像なし＝グレーの背景になります） -->
   <link rel="preload" as="image" href="images/hero.jpg" fetchpriority="high">
   <title>第64回 文化祭｜伝承華</title>
 
@@ -93,6 +93,7 @@
       height: var(--app-h, 100vh);
       height: 100svh;
       overflow: hidden;
+      background: #4a4a4a;   /* 背景画像が無いときのグレーの背景（空欄） */
     }
 
     /* ★背景画像：HTML内の <img class="hero__bg"> の src を差し替え */
@@ -455,7 +456,7 @@
     .map__viewport { height: 100%; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
     .map__track { display: flex; height: 100%; transition: transform 0.25s ease-out; will-change: transform; }
     .map__track.is-dragging { transition: none; cursor: grabbing; }
-    .map__slide { flex: 0 0 100%; height: 100%; }
+    .map__slide { flex: 0 0 100%; height: 100%; background: rgba(128, 128, 128, 0.3); }   /* 画像が無いときはグレーの空枠 */
     .map__slide img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; }
     .map__slide img.is-ready { opacity: 1; }
     /* いま表示中の階（左上のバッジ） */
@@ -570,6 +571,9 @@
       outline-offset: 2px;
     }
     .footer__banners a:hover, .footer__banners a:focus-visible { outline-color: var(--sakura); }
+    /* バナー画像が無いときは、グレーの空枠（リンクは使える） */
+    .footer__banners a.is-empty { width: 200px; height: var(--banner-h); max-width: 100%; background: rgba(128, 128, 128, 0.3); }
+    .footer__banners a.is-empty img { display: none; }
     .footer__banners img {
       display: block;
       height: var(--banner-h);
@@ -606,10 +610,10 @@
 
     <!-- ▼▼▼ 背景画像 ▼▼▼
          images/hero.jpg（または .png / .webp）を置くと自動で表示されます。
-         画像が無いときは仮画像（Unsplash）が表示されます。
+         画像が無いときは、画像なし（グレーの背景）になります。
          ・heroBlur = 横長画面の左右を埋める「ぼかして拡大した背景」（同じ画像を自動で使用）
          ・heroImg  = メイン画像（横長画面では元の縦横比のまま中央に表示）
-         ※画像が無い／拡張子が違うときは、下の <script> が別の拡張子や仮画像を自動で探します -->
+         ※画像が無い／拡張子が違うときは、下の <script> が別の拡張子を自動で探します（無ければグレーの背景） -->
     <img class="hero__bg-blur" id="heroBlur" alt="" aria-hidden="true">
     <img class="hero__bg" id="heroImg" alt="" src="images/hero.jpg" fetchpriority="high">
     <!-- ▲▲▲ 背景画像ここまで ▲▲▲ -->
@@ -663,13 +667,13 @@
   <footer class="footer" id="footer">
     <div class="footer__inner">
       <div class="footer__school">
-        <!-- ▼ 校章マーク（仮画像）。images/footer/emblem.png を置くと自動で差し替わります -->
+        <!-- ▼ 校章マーク。images/footer/emblem.png を置くと自動で表示されます（画像が無いときは表示されません） -->
         <img class="footer__emblem" id="footerEmblem" alt="熊本県立第二高等学校 校章" decoding="async">
         <div class="footer__info">
           <p class="footer__name">熊本県立第二高等学校<span>Kumamoto Prefectural Daini High School</span></p>
           <p>〒862-0901 熊本県熊本市東区東町3-13-1</p>
           <p>TEL : <a href="tel:0963684125">096-368-4125</a>&emsp;FAX : 096-365-5636</p>
-          <p class="footer__admin">管理者：管理者 生徒会 | システム管理者 生徒会広報担当者</p>
+          <p class="footer__admin">管理者 生徒会広報担当者</p>
         </div>
       </div>
       <!-- ▼ リンクバナー5つ（PC=横並び／スマホ=縦並び）。中身は <script> の FOOTER_BANNERS から自動生成 -->
@@ -716,7 +720,7 @@
        ■ 画像の差し替え（かんたん）：
            images/カテゴリid/file名.jpg  というファイルを置くだけで自動表示されます。
            例）食バザーの2年2組 → images/food/2-2.jpg
-           （.jpg .jpeg .png .webp に対応／見つからなければ仮画像）
+           （.jpg .jpeg .png .webp に対応／見つからなければグレーの空枠）
          ※img にURLを書くと、そちらが優先されます。 例）img: "https://…/photo.jpg"
          ※この画像は、カードの背景と、詳細ポップアップの下部（紹介文の下）に使われます。
        ■ 各団体のデータの意味：
@@ -849,7 +853,7 @@
     /* ==================================================
        ★校内マップの設定
        ■ 画像の差し替え（かんたん）：images/map/1f.png のように置くだけで自動表示されます
-           （1f=1階, 2f=2階 …／.jpg .jpeg .png .webp に対応／なければ仮マップ）
+           （1f=1階, 2f=2階 …／.jpg .jpeg .png .webp に対応／なければグレーの空枠）
          ※img にURLを書くと、そちらが優先されます。
        ■ 階の追加：配列に { label: "5階", tag: "5F", file: "5f", img: "" } を足すと階も増えます（tag は「5F」表示用）
     ================================================== */
@@ -880,7 +884,7 @@
           └─ map/1f.png        ← 校内マップ（2f.png, 3f.png, 4f.png）
 
        ・ファイル名は半角英数字で、大文字小文字も正確に（GitHub Pagesは区別します）
-       ・拡張子は .jpg .jpeg .png .webp（大文字の .JPG なども可）。画像が無い所は仮画像になります
+       ・拡張子は .jpg .jpeg .png .webp（大文字の .JPG なども可）。画像が無い所は空欄（グレーの枠など）になります
        ・うまく表示されないときは、ページのURLの末尾に ?imgcheck を付けて開くと、
          どの画像が見つかり、どの画像が見つからないか（探している場所）が一覧で出ます
        ・画像は横幅1600px・1MB以下くらいに軽くしておくと表示が速くなります
@@ -888,14 +892,13 @@
     const IMAGE_FOLDER = "images";
     const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "JPG", "JPEG", "PNG", "WEBP"];   // 探す拡張子（順番に試します）
     const HERO_IMAGE = "";                                     // 例: "https://…/top.jpg"（空なら images/hero.* を探す）
-    const HERO_FALLBACK = "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=2000&q=80"; // 仮画像
 
     /* ==================================================
        ★フッターの設定
        ■ 校章・バナー画像の差し替え（かんたん）：
            images/footer/emblem.png    ← 校章マーク
            images/footer/banner1.jpg 〜 banner5.jpg ← バナー（左から／上から順）
-           （.jpg .jpeg .png .webp に対応／無ければ仮画像）
+           （.jpg .jpeg .png .webp に対応／無ければ空欄）
          ※img にURLを書くと、そちらが優先されます。
        ■ リンク先：url を書き換える。label はバナーの説明（画像の代替テキスト）
     ================================================== */
@@ -926,9 +929,6 @@
     /* ==================================================
        以下はプログラム本体（初心者の方は触らなくてOKです）
     ================================================== */
-
-    // 仮画像（img が空のときに使うダミー画像）
-    const dummyImg = (seed) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/800/600`;
 
     // カードに表示する団体名のHTML。wrap があれば、| の位置でだけ折り返す（例：普通科 / 美術部）
     function nameHTML(item) {
@@ -976,12 +976,12 @@
       }
       return "";
     }
-    // 団体1件の画像を決める（必要になったときに1回だけ）：img指定 → imagesフォルダ → 仮画像 の順
+    // 団体1件の画像を決める（必要になったときに1回だけ）：img指定 → imagesフォルダ。どちらも無ければ空欄（画像なし）
     function resolveItemImage(cat, item) {
       if (!item._p) {
         item._p = (async () => {
           item.found = item.img || (item.file ? await findImage(cat.id, item.file) : "");   // 見つかった画像（無ければ ""）
-          item.src = item.found || dummyImg(cat.id + "-" + item.name);
+          item.src = item.found;                      // 画像が無いときは "" のまま（仮画像は出さない）
           return item.src;
         })();
       }
@@ -992,7 +992,7 @@
       if (!f._p) {
         f._p = (async () => {
           f.found = f.img || (f.file ? await findImage("map", f.file) : "");
-          f.src = f.found || mapPlaceholder(f.label);
+          f.src = f.found;                            // 画像が無いときは "" のまま（仮画像は出さない）
           return f.src;
         })();
       }
@@ -1004,7 +1004,7 @@
         const img = card.querySelector("img");
         if (!img || img.getAttribute("src")) return;
         resolveItemImage(cat, cat.items[Number(card.dataset.i)]).then((src) => {
-          if (!img.getAttribute("src")) img.src = src;
+          if (src && !img.getAttribute("src")) img.src = src;      // 画像が無いときは何もしない（空の枠のまま）
         });
       });
     }
@@ -1032,9 +1032,9 @@
       box.style.setProperty("--bg", `url("${img.currentSrc || img.src}")`);
     }, true);
 
-    // ヒーロー（背景）画像を決める：HERO_IMAGE → images/hero.* → 仮画像
+    // ヒーロー（背景）画像を決める：HERO_IMAGE → images/hero.*。無ければ ""（空）
     async function resolveHero() {
-      return HERO_IMAGE || (await findImage("", "hero")) || HERO_FALLBACK;
+      return HERO_IMAGE || (await findImage("", "hero"));
     }
 
     // ---------- カテゴリセクションの生成 ----------
@@ -1288,8 +1288,12 @@
       // 詳細の大きな画像は、ポップアップを開いたときに初めて読み込む
       currentDetail = item;
       detailImg.parentElement.style.removeProperty("--bg");   // 前の画像のぼかし背景を消す
+      const detailBox = detailImg.parentElement;
+      detailBox.hidden = true;                                  // 画像が無いときは、画像の枠ごと表示しない
       detailImg.removeAttribute("src");
-      resolveItemImage(cat, item).then((src) => { if (currentDetail === item) detailImg.src = src; });
+      resolveItemImage(cat, item).then((src) => {
+        if (currentDetail === item && src) { detailBox.hidden = false; detailImg.src = src; }
+      });
       detailImg.alt = item.name + "の画像";
       detail.classList.add("is-open");
       detail.querySelector(".modal__panel").scrollTop = 0;
@@ -1326,19 +1330,6 @@
     });
 
     // ---------- 校内マップ（スライダー） ----------
-    // 仮のマップ画像（img が空のときに使うSVG）
-    function mapPlaceholder(label) {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
-        <rect width="800" height="500" fill="#e9e4ea"/>
-        <g fill="none" stroke="#9a93a0" stroke-width="3">
-          <rect x="40" y="40" width="720" height="420"/>
-          <path d="M40 200H760M300 40V200M520 40V200M200 200V460M600 200V460"/>
-        </g>
-        <text x="400" y="340" text-anchor="middle" font-size="40" fill="#6d6673" font-family="serif">${label} マップ（仮）</text>
-      </svg>`;
-      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-    }
-
     const mapTabs = document.getElementById("mapTabs");
     const mapTrack = document.getElementById("mapTrack");
     const mapViewport = document.getElementById("mapViewport");
@@ -1379,7 +1370,7 @@
         if (!f) return;
         const img = mapTrack.children[i] && mapTrack.children[i].querySelector("img");
         if (!img || img.getAttribute("src")) return;
-        resolveFloorImage(f).then((src) => { if (!img.getAttribute("src")) img.src = src; });
+        resolveFloorImage(f).then((src) => { if (src && !img.getAttribute("src")) img.src = src; });
       });
     }
     function buildMap() {
@@ -1434,27 +1425,21 @@
     whenNear(document.getElementById("map"), () => { mapActive = true; loadMapImages(); });
 
     // ---------- フッター（校章・リンクバナー） ----------
-    // 仮の校章・バナー画像（SVG）
-    function footerPlaceholder(kind, label) {
-      const svg = kind === "emblem"
-        ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#e9e4ea" stroke="#9a93a0" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="22" fill="#6d6673" font-family="serif">校章</text></svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="46" viewBox="0 0 200 46"><rect width="200" height="46" fill="#e9e4ea"/><text x="100" y="28" text-anchor="middle" font-size="12" fill="#6d6673" font-family="serif">${label}（仮）</text></svg>`;
-      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-    }
     // バナーのリンクを作る（画像は近くに来てから読み込む）
     document.getElementById("footerBanners").innerHTML = FOOTER_BANNERS.map((b) =>
       `<li><a href="${b.url}" target="_blank" rel="noopener noreferrer" aria-label="${b.label}"><img alt="${b.label}" loading="lazy" decoding="async"></a></li>`
     ).join("");
-    // 校章・バナー画像を決めて設定する：img指定 → images/footer/ → 仮画像
+    // 校章・バナー画像を決めて設定する：img指定 → images/footer/。無ければ、校章は非表示・バナーはグレーの空枠
     async function loadFooterImages() {
-      const set = async (obj, imgEl, fallback) => {
-        obj.found = obj.img || await findImage("footer", obj.file);
-        imgEl.src = obj.found || fallback;
-      };
+      const emblem = document.getElementById("footerEmblem");
       const imgs = document.querySelectorAll("#footerBanners img");
+      const set = async (obj, imgEl, onNone) => {
+        obj.found = obj.img || await findImage("footer", obj.file);
+        if (obj.found) imgEl.src = obj.found; else onNone();
+      };
       await Promise.all([
-        set(FOOTER_EMBLEM, document.getElementById("footerEmblem"), footerPlaceholder("emblem")),
-        ...FOOTER_BANNERS.map((b, i) => set(b, imgs[i], footerPlaceholder("banner", "バナー" + (i + 1))))
+        set(FOOTER_EMBLEM, emblem, () => { emblem.style.display = "none"; }),
+        ...FOOTER_BANNERS.map((b, i) => set(b, imgs[i], () => imgs[i].closest("a").classList.add("is-empty")))
       ]);
     }
     whenNear(document.getElementById("footer"), loadFooterImages);
@@ -1467,7 +1452,7 @@
       FLOORS.forEach((f) => jobs.push(resolveFloorImage(f)));
       jobs.push(loadFooterImages());
       await Promise.all(jobs);
-      const heroFound = heroImg.naturalWidth > 0 && heroImg.src !== HERO_FALLBACK;
+      const heroFound = heroImg.naturalWidth > 0;
       const rows = [[heroFound, "ヒーロー背景", IMAGE_FOLDER + "/hero.jpg"]];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) =>
         rows.push([!!it.found, cat.title + "：" + it.name, IMAGE_FOLDER + "/" + cat.id + "/" + it.file + ".jpg"])));
@@ -1570,10 +1555,13 @@
     let heroRetried = false;
     function heroLoaded() { syncBlur(); startHeroAnimation(); }
     function heroFailed() {
-      if (heroRetried) { startHeroAnimation(); return; }       // 仮画像でも駄目なら、演出だけ始める
+      if (heroRetried) { heroImg.hidden = true; startHeroAnimation(); return; }   // 駄目なら画像なし（グレーの背景）で演出だけ始める
       heroRetried = true;
-      // images/hero.jpg が無い → 他の拡張子を探す → それも無ければ仮画像
-      resolveHero().then((src) => { heroImg.src = src; });
+      // images/hero.jpg が無い → 他の拡張子を探す → それも無ければ画像なし（グレーの背景）
+      resolveHero().then((src) => {
+        if (src) heroImg.src = src;
+        else { heroImg.hidden = true; startHeroAnimation(); }
+      });
     }
     heroImg.alt = "文化祭メイン画像";
     heroImg.addEventListener("load", heroLoaded);
