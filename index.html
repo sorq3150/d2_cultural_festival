@@ -471,7 +471,7 @@
     .footer {
       border-top: 1px solid var(--card-border);
       background: var(--ink-soft);
-      padding: clamp(2rem, 6vw, 3.5rem) var(--pad) calc(clamp(1.5rem, 4vw, 2.5rem) + env(safe-area-inset-bottom, 0px));
+      padding: clamp(2rem, 6vw, 3.5rem) var(--pad) calc(clamp(1.5rem, 4vw, 2.5rem) + 3.5rem + env(safe-area-inset-bottom, 0px));   /* 下に余白＝右下の地球ボタンと重ならないように */
     }
     .footer__inner { max-width: 1100px; margin: 0 auto; }
     /* 校章は学校名などの文字の上・中央。文字情報はすべて中央揃え */
@@ -537,6 +537,70 @@
       .footer__banners { flex-direction: column; }   /* スマホは縦並び */
     }
 
+    /* ==================================================
+       言語切り替え（右下に固定の地球ボタン）
+       ・ボタンは指で押しやすい44px。端から12px＋ホームバー等の安全領域ぶん離す
+       ・z-index 200：ポップアップ（100/110）より手前＝いつでも押せる
+    ================================================== */
+    .lang {
+      position: fixed;
+      right: calc(12px + env(safe-area-inset-right, 0px));
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .lang__btn {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      background: rgba(0, 0, 0, 0.62);   /* 写真の上でも見えるよう、濃い半透明の丸 */
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .lang__btn:hover, .lang__btn:focus-visible, .lang__btn[aria-expanded="true"] { background: rgba(0, 0, 0, 0.85); border-color: var(--sakura); outline: none; }
+    .lang__menu {
+      list-style: none;
+      min-width: 150px;
+      padding: 4px;
+      background: var(--ink-soft);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .lang__menu button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      letter-spacing: 0.06em;
+      text-align: left;
+      cursor: pointer;
+    }
+    .lang__menu button:hover, .lang__menu button:focus-visible { background: rgba(128, 128, 128, 0.2); outline: none; }
+    .lang__menu button[aria-checked="true"]::after { content: "✓"; margin-left: 1rem; color: var(--sakura); }
+
+    /* English表示のとき：縦書きタイトルは英語が読みにくいので、横書きに切り替える */
+    html[lang="en"] .title-vertical { writing-mode: horizontal-tb; text-align: center; letter-spacing: 0.06em; }
+    html[lang="en"] .title-vertical__main { font-size: clamp(2rem, min(11vw, 12vh), 4.8rem); letter-spacing: 0.1em; }
+    html[lang="en"] .title-vertical__sub  { font-size: clamp(0.8rem, min(3.6vw, 4vh), 1.5rem); margin-top: 0.5em; font-weight: 400; }   /* 英字は細いと写真の上で読みにくいので少し太く */
+    /* 英語のサブタイトル（The 64th Cultural Festival）は長いので、狭いスマホでは「Scroll ↓」を少し上に上げて重ならないようにする */
+    @media (max-width: 480px) {
+      html[lang="en"] .scroll-hint { bottom: calc(clamp(1rem, 4vh, 2.5rem) + 3.4rem); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .is-loaded .title-vertical, .is-title-done .title-horizontal { animation-duration: 0.01s; animation-delay: 0s; }
       .scroll-hint span { animation: none; }
@@ -570,14 +634,14 @@
       <div>
         <!-- ① 縦書きメインタイトル（縦書きでは「ー」が縦線として表示されます） -->
         <h1 class="title-vertical">
-          <span class="title-vertical__main">伝承華</span>
-          <span class="title-vertical__sub">ー受け継ぐ想い、咲き誇る今ー</span>
+          <span class="title-vertical__main" data-i18n="heroMain">伝承華</span>
+          <span class="title-vertical__sub" data-i18n="heroSub">ー受け継ぐ想い、咲き誇る今ー</span>
         </h1>
       </div>
     </div>
 
     <!-- ② 横書きサブタイトル（画面左下） -->
-    <p class="title-horizontal" id="subtitle">第64回<br>文化祭</p>
+    <p class="title-horizontal" id="subtitle" data-i18n-html="subtitle">第64回<br>文化祭</p>
 
     <!-- スクロール案内（サブタイトル表示完了後に出現） -->
     <button class="scroll-hint" id="scrollHint" type="button">Scroll <span>↓</span></button>
@@ -602,10 +666,10 @@
         <!-- ▼ 校章マーク。images/footer/emblem.png を置くと自動で表示されます（画像が無いときは表示されません） -->
         <img class="footer__emblem" id="footerEmblem" alt="熊本県立第二高等学校 校章" decoding="async">
         <div class="footer__info">
-          <p class="footer__name">熊本県立第二高等学校<span>Kumamoto Prefectural Daini High School</span></p>
-          <p>〒862-0901 熊本県熊本市東区東町3-13-1</p>
+          <p class="footer__name" data-i18n-html="footerName">熊本県立第二高等学校<span>Kumamoto Prefectural Daini High School</span></p>
+          <p data-i18n="footerAddress">〒862-0901 熊本県熊本市東区東町3-13-1</p>
           <p>TEL : <a href="tel:0963684125">096-368-4125</a>&emsp;FAX : 096-365-5636</p>
-          <p class="footer__admin">管理者 生徒会広報担当者</p>
+          <p class="footer__admin" data-i18n="footerAdmin">管理者 生徒会広報担当者</p>
         </div>
       </div>
       <!-- ▼ リンクバナー5つ（PC=横並び／スマホ=縦並び）。中身は <script> の FOOTER_BANNERS から自動生成 -->
@@ -620,7 +684,7 @@
     <div class="modal__panel">
       <div class="modal__head">
         <h2 class="modal__title" id="modalTitle"></h2>
-        <button class="modal__close" id="modalClose" type="button" aria-label="閉じる">✕</button>
+        <button class="modal__close" id="modalClose" type="button" aria-label="閉じる" data-i18n-aria="close">✕</button>
       </div>
       <div class="modal__grid" id="modalGrid"></div>
     </div>
@@ -635,7 +699,7 @@
     <div class="modal__panel detail__panel">
       <div class="modal__head">
         <h2 class="modal__title" id="detailTitle"></h2>
-        <button class="modal__close" id="detailClose" type="button" aria-label="閉じる">✕</button>
+        <button class="modal__close" id="detailClose" type="button" aria-label="閉じる" data-i18n-aria="close">✕</button>
       </div>
       <p class="detail__sub" id="detailSub"></p>
       <p class="detail__text" id="detailText"></p>
@@ -643,6 +707,23 @@
         <img class="detail__img" id="detailImg" alt="">
       </div>
     </div>
+  </div>
+
+  <!-- ==================================================
+       言語切り替え（右下の地球マーク）：日本語 / English
+       ・表示する文言は、下の <script> 内の I18N（固定文言）と、CATEGORIES の en / titleEn（団体データ）
+  ================================================== -->
+  <div class="lang" id="lang">
+    <ul class="lang__menu" id="langMenu" role="menu" hidden>
+      <li role="none"><button type="button" role="menuitemradio" data-lang="ja" aria-checked="true">日本語</button></li>
+      <li role="none"><button type="button" role="menuitemradio" data-lang="en" aria-checked="false">English</button></li>
+    </ul>
+    <button class="lang__btn" id="langBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="言語 / Language">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/>
+        <path d="M12 2.5c2.6 2.6 4 5.9 4 9.5s-1.4 6.9-4 9.5c-2.6-2.6-4-5.9-4-9.5s1.4-6.9 4-9.5z"/>
+      </svg>
+    </button>
   </div>
 
   <script>
@@ -678,109 +759,115 @@
       {
         id: "food",
         title: "食バザー",
+        titleEn: "Food Bazaar",
         items: [
           // ▼ 食バザーの画像差し替え箇所（images/food/ファイル名.jpg を置くと自動表示）
-          { name: "2年2組", file: "2-2", title: "ミキおばさんのポップコーンとマサユキおじさんのかき氷", text: "「いいかい。ポップコーンやかき氷を作るとき一番大切なのは、作る技術じゃないんだよ。それを誰かの為に作ろうっていう気持ちなんだよ。」", img: "" },
-          { name: "2年4組", file: "2-4", title: "チョコッとよってかない？チョコバナナ学園", text: "2年4組は、お祭りの定番チョコバナナを販売します！冷凍のまま販売するため、ひんやり新鮮なものを提供できます。とてもおいしいので、ぜひ来てみてください！", img: "" },
-          { name: "2年5組", file: "2-5", title: "FUMINORI’S DINER 25", text: "ここはネオンが輝きしレコードから音楽が流れるアメリカンダイナー。熱々のたこ焼きと焼きそばを味わいながら映画のワンシーンのようなひと時をお楽しみください。", img: "" },
-          { name: "2年6組", file: "2-6", title: "タンフルはやべえだろ", text: "2-6ではいちごとマスカットのフルーツ飴を販売します。教室はラブ上等の雰囲気なので、ぜひフルーツ飴を買いに来てください！", img: "" },
-          { name: "2年8組", file: "2-8", title: "グランメゾン リカ", text: "私たち2年8組は「グランメゾン東京」をモチーフに二高生やお客様からの三つ星をいただくためにたくさんの話し合いを重ねてきました。Bon appétit!!", img: "" },
-          { name: "2年S組", file: "2-S", title: "寺田屋（おぬしも甘いのう）", text: "あのPowersがパワーアップして帰ってくる！と思ったら今度はパンケーキ！？そして寺田屋とは？なんか怪しい雰囲気出てるけど・・・やばくねーよ☆", img: "" }
+          { name: "2年2組", file: "2-2", title: "ミキおばさんのポップコーンとマサユキおじさんのかき氷", text: "「いいかい。ポップコーンやかき氷を作るとき一番大切なのは、作る技術じゃないんだよ。それを誰かの為に作ろうっていう気持ちなんだよ。」", en: { name: "Class 2-2", title: "Aunt Miki's Popcorn & Uncle Masayuki's Shaved Ice", text: "“Listen. The most important thing when making popcorn or shaved ice isn't skill. It's the heart to make it for someone else.”" }, img: "" },
+          { name: "2年4組", file: "2-4", title: "チョコッとよってかない？チョコバナナ学園", text: "2年4組は、お祭りの定番チョコバナナを販売します！冷凍のまま販売するため、ひんやり新鮮なものを提供できます。とてもおいしいので、ぜひ来てみてください！", en: { name: "Class 2-4", title: "Drop By for a Little Choco? Choco-Banana Academy", text: "Class 2-4 is selling chocolate bananas, a festival classic! Because we sell them frozen, we can serve them nice and chilled. They're delicious, so please come and try one!" }, img: "" },
+          { name: "2年5組", file: "2-5", title: "FUMINORI’S DINER 25", text: "ここはネオンが輝きしレコードから音楽が流れるアメリカンダイナー。熱々のたこ焼きと焼きそばを味わいながら映画のワンシーンのようなひと時をお楽しみください。", en: { name: "Class 2-5", title: "FUMINORI’S DINER 25", text: "This is an American diner glowing with neon, with music playing from records. Enjoy piping-hot takoyaki and yakisoba while savoring a moment like a scene from a movie." }, img: "" },
+          { name: "2年6組", file: "2-6", title: "タンフルはやべえだろ", text: "2-6ではいちごとマスカットのフルーツ飴を販売します。教室はラブ上等の雰囲気なので、ぜひフルーツ飴を買いに来てください！", en: { name: "Class 2-6", title: "Tanghulu Is Too Wild, Isn't It?", text: "Class 2-6 sells strawberry and muscat grape candied fruit. The classroom has a “bring on the love” atmosphere, so please come and buy some candied fruit!" }, img: "" },
+          { name: "2年8組", file: "2-8", title: "グランメゾン リカ", text: "私たち2年8組は「グランメゾン東京」をモチーフに二高生やお客様からの三つ星をいただくためにたくさんの話し合いを重ねてきました。Bon appétit!!", en: { name: "Class 2-8", title: "Grand Maison Rika", text: "Class 2-8 took inspiration from “Grand Maison Tokyo” and held countless discussions in hopes of earning three stars from Daini students and our guests. Bon appétit!!" }, img: "" },
+          { name: "2年S組", file: "2-S", title: "寺田屋（おぬしも甘いのう）", text: "あのPowersがパワーアップして帰ってくる！と思ったら今度はパンケーキ！？そして寺田屋とは？なんか怪しい雰囲気出てるけど・・・やばくねーよ☆", en: { name: "Class 2-S", title: "Teradaya (“You're a Sweet One Too, Aren't You?”)", text: "The famous Powers is back, even more powerful! Or so we thought, but this time it's pancakes?! And what is Teradaya? It feels a bit suspicious, but... it's not that dangerous, really ☆" }, img: "" }
         ]
       },
       {
         id: "exhibit",
         title: "展示",
+        titleEn: "Exhibitions",
         items: [
           // ▼ 展示の画像差し替え箇所（images/exhibit/ファイル名.jpg を置くと自動表示）
-          { name: "2年1組", file: "2-1", title: "VSくっしー", text: "あの人気番組を文化祭で再現！？さまざまなゲームに挑戦すると景品がもらえます！最高点を取ることができるのは果たして誰なのか。ぜひお越しください！！", img: "" },
-          { name: "2年A組", file: "2-A", title: "ニノエ美術館 第二展示室", text: "【緊急募集】ニノエ美術館、第二展示室の警備員を募集しています！作品の状態を確認するだけの簡単なお仕事！※命の保証はできかねます。", img: "" },
-          { name: "1年1組", file: "1-1", title: "ゴールできたらハイチーズ！ハロウィン教室でスクリーム！", text: "一足早く第二にハロウィン到来！絶叫必須のおばけ屋敷と最高の思い出を残せるフォトスポットが誕生！新体験の恐怖と楽しさをあなたに。", img: "" },
-          { name: "1年2組", file: "1-2", title: "ドキドキハラハラ格付けチェック", text: "あなたの感覚は一流？二流？様々な格付けチェックで見て聞いて、真贋を見抜け！挑戦後はお菓子やフォトスポットを用意しています。", img: "" },
-          { name: "1年4組", file: "1-4", title: "HOLLYWOOD体験", text: "あなたもハリウッドスターになってみませんか？１年４組ではレッドカーペットの上を歩きハリウッドスターの気分を味わうことができます。ぜひおこし下さい！", img: "" },
-          { name: "1年6組", file: "1-6", title: "神秘的な教室", text: "プラネタリウムとフォトスポットを合わせた僕たちの最高傑作です。輝いている第二の中で美しく広がる神秘的な世界。どうぞ立ち寄ってみてください。", img: "" },
-          { name: "1年7組", file: "1-7", title: "ミニスポッチャ", text: "お好み焼きのような個性豊かなメンバーが混ざり合い、最高に楽しくて面白い特設スポッチャが完成！笑顔あふれる熱々の空間へ、みんなで一緒に遊びに来てね！", img: "" },
-          { name: "1年A組", file: "1-A", title: "笑神竜神図屏風", text: "伝承華というテーマから、二高60周年記念キャラの竜くんとニコちゃんを風神雷神に見立て、肥後六花と描きました。竜胆も描かれているので探してみてください。", img: "" }
+          { name: "2年1組", file: "2-1", title: "VSくっしー", text: "あの人気番組を文化祭で再現！？さまざまなゲームに挑戦すると景品がもらえます！最高点を取ることができるのは果たして誰なのか。ぜひお越しください！！", en: { name: "Class 2-1", title: "VS Kusshi", text: "We're recreating that famous TV show at the festival?! Take on a variety of games and win prizes! Who will get the highest score? Please come and join us!!" }, img: "" },
+          { name: "2年A組", file: "2-A", title: "ニノエ美術館 第二展示室", text: "【緊急募集】ニノエ美術館、第二展示室の警備員を募集しています！作品の状態を確認するだけの簡単なお仕事！※命の保証はできかねます。", en: { name: "Class 2-A", title: "Ninoe Museum, Exhibition Room 2", text: "[Urgent Recruitment] The Ninoe Museum is hiring a guard for Exhibition Room 2! It's an easy job: just check the condition of the artworks! *We cannot guarantee your life." }, img: "" },
+          { name: "1年1組", file: "1-1", title: "ゴールできたらハイチーズ！ハロウィン教室でスクリーム！", text: "一足早く第二にハロウィン到来！絶叫必須のおばけ屋敷と最高の思い出を残せるフォトスポットが誕生！新体験の恐怖と楽しさをあなたに。", en: { name: "Class 1-1", title: "Say Cheese at the Goal! Scream in the Halloween Classroom!", text: "Halloween arrives early at Daini! A must-scream haunted house and a photo spot for unforgettable memories! Experience new thrills and fun." }, img: "" },
+          { name: "1年2組", file: "1-2", title: "ドキドキハラハラ格付けチェック", text: "あなたの感覚は一流？二流？様々な格付けチェックで見て聞いて、真贋を見抜け！挑戦後はお菓子やフォトスポットを用意しています。", en: { name: "Class 1-2", title: "Heart-Pounding Ranking Check", text: "Is your sense first-class or second-class? See and hear your way through various ranking checks and tell real from fake! After the challenge, we have snacks and a photo spot ready." }, img: "" },
+          { name: "1年4組", file: "1-4", title: "HOLLYWOOD体験", text: "あなたもハリウッドスターになってみませんか？１年４組ではレッドカーペットの上を歩きハリウッドスターの気分を味わうことができます。ぜひおこし下さい！", en: { name: "Class 1-4", title: "HOLLYWOOD Experience", text: "Want to become a Hollywood star? In Class 1-4 you can walk the red carpet and feel like a Hollywood star. Please drop by!" }, img: "" },
+          { name: "1年6組", file: "1-6", title: "神秘的な教室", text: "プラネタリウムとフォトスポットを合わせた僕たちの最高傑作です。輝いている第二の中で美しく広がる神秘的な世界。どうぞ立ち寄ってみてください。", en: { name: "Class 1-6", title: "Mysterious Classroom", text: "A planetarium combined with a photo spot: our masterpiece. Within the shining Daini, a mysterious world spreads out beautifully. Please stop by." }, img: "" },
+          { name: "1年7組", file: "1-7", title: "ミニスポッチャ", text: "お好み焼きのような個性豊かなメンバーが混ざり合い、最高に楽しくて面白い特設スポッチャが完成！笑顔あふれる熱々の空間へ、みんなで一緒に遊びに来てね！", en: { name: "Class 1-7", title: "Mini Spo-Cha", text: "A mix of members as individual as okonomiyaki has created the most fun, most entertaining special Spo-Cha corner! Come play with us in this smile-filled, piping-hot space!" }, img: "" },
+          { name: "1年A組", file: "1-A", title: "笑神竜神図屏風", text: "伝承華というテーマから、二高60周年記念キャラの竜くんとニコちゃんを風神雷神に見立て、肥後六花と描きました。竜胆も描かれているので探してみてください。", en: { name: "Class 1-A", title: "Folding Screen of the Laughing God and Dragon God", text: "Inspired by the theme “Densho-ka,” we painted our Daini 60th-anniversary mascots Ryu-kun and Nico-chan as the Wind and Thunder Gods, together with the Higo Rokka flowers. Rindō (gentian) flowers are painted too, so try to find them!" }, img: "" }
         ]
       },
       {
         id: "stage",
         title: "ステージ",
+        titleEn: "Stage",
         items: [
           // ▼ ステージの画像差し替え箇所（images/stage/ファイル名.jpg を置くと自動表示）
-          { name: "2年3組", file: "2-3", title: "兎と亀", text: "昔々、兎と亀がそれぞれ徒党を組んでおった。両者はお互いに嫌い合っていたそうな。ある年、不作に見舞われ、飢饉に陥ってしまった。これは、そのときのお話。", img: "" },
-          { name: "2年7組", file: "2-7", title: "イケダ探し", text: "何者かに襲われた池田先生をアイテムを集めて助けよう！※この作品は映画ちいかわのパロディです。楽しく見たい人は映画ちいかわの予習をしておいてね！", img: "" },
-          { name: "1年3組", file: "1-3", title: "We’re team Takuji!", text: "１年３組は、私たちの良さである明るさ、元気、おもしろさをいかした個性あふれるダンスをおどります。絶対面白くて魅力的で楽しいのでぜひ来てください！！", img: "" },
-          { name: "1年5組", file: "1-5", title: "廃部寸前！？探偵部と１００万円の花瓶", text: "ある高校の探偵部。突然彼らに廃部が言い渡される！？事件を解決すれば廃部を阻止できるらしい！真犯人は一体誰だ？コメディ×ミステリーの痛快劇！！乞うご期待！！", img: "" },
-          { name: "1年8組", file: "1-8", title: "赤点回避 プリキュア", text: "いつも通りのテスト返却のはずだった。赤点をとった生徒たちは絶望しゾンビ化！そこに現れたのはまさかのプリキュア！みんなでプリキュアを応援しよう！", img: "" },
-          { name: "1年S組", file: "1-S", title: "1年S組オンステージ", text: "完全オリジナルストーリーでおくるギャグホラーステージ。夜の学校に閉じ込められた主人公たち。最後にどんでん返しが！！細部まで見逃すな！！！！！！", img: "" }
+          { name: "2年3組", file: "2-3", title: "兎と亀", text: "昔々、兎と亀がそれぞれ徒党を組んでおった。両者はお互いに嫌い合っていたそうな。ある年、不作に見舞われ、飢饉に陥ってしまった。これは、そのときのお話。", en: { name: "Class 2-3", title: "The Rabbit and the Tortoise", text: "Once upon a time, a rabbit and a tortoise each formed their own band of followers. The two groups hated each other. One year, a poor harvest brought famine. This is the tale of that time." }, img: "" },
+          { name: "2年7組", file: "2-7", title: "イケダ探し", text: "何者かに襲われた池田先生をアイテムを集めて助けよう！※この作品は映画ちいかわのパロディです。楽しく見たい人は映画ちいかわの予習をしておいてね！", en: { name: "Class 2-7", title: "Searching for Ikeda", text: "Ikeda-sensei has been attacked by someone! Collect items and save him! *This work is a parody of the movie “Chiikawa.” If you want to enjoy it, study the Chiikawa movie beforehand!" }, img: "" },
+          { name: "1年3組", file: "1-3", title: "We’re team Takuji!", text: "１年３組は、私たちの良さである明るさ、元気、おもしろさをいかした個性あふれるダンスをおどります。絶対面白くて魅力的で楽しいのでぜひ来てください！！", en: { name: "Class 1-3", title: "We’re team Takuji!", text: "Class 1-3 will perform dances full of personality, drawing on our strengths: cheerfulness, energy, and fun. It will absolutely be funny, charming, and enjoyable. Please come!!" }, img: "" },
+          { name: "1年5組", file: "1-5", title: "廃部寸前！？探偵部と１００万円の花瓶", text: "ある高校の探偵部。突然彼らに廃部が言い渡される！？事件を解決すれば廃部を阻止できるらしい！真犯人は一体誰だ？コメディ×ミステリーの痛快劇！！乞うご期待！！", en: { name: "Class 1-5", title: "On the Brink of Disbandment?! The Detective Club and the 1-Million-Yen Vase", text: "A high school detective club is suddenly told it will be disbanded?! Solve the case and the club may be saved! Who is the real culprit? A comedy × mystery thriller!! Stay tuned!!" }, img: "" },
+          { name: "1年8組", file: "1-8", title: "赤点回避 プリキュア", text: "いつも通りのテスト返却のはずだった。赤点をとった生徒たちは絶望しゾンビ化！そこに現れたのはまさかのプリキュア！みんなでプリキュアを応援しよう！", en: { name: "Class 1-8", title: "Avoiding Failing Grades: Pretty Cure", text: "It was supposed to be just another day of getting tests back. The students who failed despaired and turned into zombies! Then, unexpectedly, Pretty Cure appeared! Let's all cheer for Pretty Cure!" }, img: "" },
+          { name: "1年S組", file: "1-S", title: "1年S組オンステージ", text: "完全オリジナルストーリーでおくるギャグホラーステージ。夜の学校に閉じ込められた主人公たち。最後にどんでん返しが！！細部まで見逃すな！！！！！！", en: { name: "Class 1-S", title: "Class 1-S On Stage", text: "A gag-horror stage with a completely original story. The protagonists are trapped in a school at night. A twist awaits at the end!! Don't miss a single detail!!!!!!" }, img: "" }
         ]
       },
       {
         id: "yushi",
         title: "有志発表",
+        titleEn: "Volunteer Performances",
         // 「＜すべて表示＞」の一覧だけ、この見出しでグループ分けして表示（スライダーの並びは変わりません）
         groups: [
-          { title: "体育館(ステージ)", names: ["金木犀", "grows", "SONMINS", "24時30分"] },
-          { title: "中庭",             names: ["いぬやさい", "かにクラブ", "GIRLs", "ニコLOVE", "ロングヘア"] }
+          { title: "体育館(ステージ)", titleEn: "Gymnasium (Stage)", names: ["金木犀", "grows", "SONMINS", "24時30分"] },
+          { title: "中庭", titleEn: "Courtyard",             names: ["いぬやさい", "かにクラブ", "GIRLs", "ニコLOVE", "ロングヘア"] }
         ],
         items: [
           // ▼ 有志発表の画像差し替え箇所（images/yushi/ファイル名.jpg を置くと自動表示）
-          { name: "grows", yomi: "ぐろうず", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", img: "" },
-          { name: "GIRLs", yomi: "がるず", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", img: "" },
-          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", img: "" },
-          { name: "SONMINS", yomi: "そんみんず", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", img: "" },
-          { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", img: "" },
-          { name: "かにクラブ", yomi: "かにくらぶ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", img: "" },
-          { name: "いぬやさい", yomi: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", img: "" },
-          { name: "ロングヘア", yomi: "ろんぐへあ", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", img: "" },
-          { name: "ニコLOVE", yomi: "にこらぶ", file: "nico-love", title: "ダンス", text: "私たちはかわいいかわいいアイドルソングを5曲披露します。かわいい振り付けや衣装に注目してくださると嬉しいです。全員で一緒に盛り上がりましょう！", img: "" }
+          { name: "grows", yomi: "ぐろうず", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", en: { name: "grows", title: "Performing “LOVE2000” and “Touch”", text: "Hello! We're grows. This time we'll perform “LOVE2000” and “Touch.” We'll make it a live show enjoyable both for those feeling nostalgic and for those hearing the songs for the first time!" }, img: "" },
+          { name: "GIRLs", yomi: "がるず", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", en: { name: "GIRLs", title: "Dance", text: "We'll come together with one heart to deliver the best stage! Please enjoy our smile-filled dancing and powerful performance until the very end." }, img: "" },
+          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", en: { name: "Kinmokusei (Osmanthus)", title: "Performing songs by Creep Pipe and aiko", text: "Hello! We are “Kinmokusei.” We'll play songs by Creep Pipe and aiko. Riding on the autumn breeze, we'll give our all to deliver our youth, so let's get excited together!!" }, img: "" },
+          { name: "SONMINS", yomi: "そんみんず", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", en: { name: "SONMINS", title: "Band", text: "Hello everyone, we are Sonmins (“The Villagers”). Following last year, we have the honor of performing on the festival stage again. We hope you enjoy it. Thank you!!" }, img: "" },
+          { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", en: { name: "24:30", title: "Band", text: "Quiet in the classroom, loud on the stage: that's the kind of band we are. If you came to the festival, hear our sound before you go home. We turn fleeting youth into a booming roar that lasts a lifetime." }, img: "" },
+          { name: "かにクラブ", yomi: "かにくらぶ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", en: { name: "Kani Club", title: "Manzai (Comedy Duo)", text: "We're Kani Club, finalists of High School Manzai 2026. Please watch over us warmly and laugh out loud for us." }, img: "" },
+          { name: "いぬやさい", yomi: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", en: { name: "Inuyasai", title: "Manzai (Comedy Duo)", text: "Two girls who love comedy take on manzai, inspired by the senior duo “Kani Club.” It's our first manzai at school. How will it go? Please look forward to it." }, img: "" },
+          { name: "ロングヘア", yomi: "ろんぐへあ", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", en: { name: "Long Hair", title: "Vocals and Guitar", text: "Our name is Long Hair, but the two of us who will perform have short hair. This is our first time performing at an event like this, so please watch with warm eyes." }, img: "" },
+          { name: "ニコLOVE", yomi: "にこらぶ", file: "nico-love", title: "ダンス", text: "私たちはかわいいかわいいアイドルソングを5曲披露します。かわいい振り付けや衣装に注目してくださると嬉しいです。全員で一緒に盛り上がりましょう！", en: { name: "Nico LOVE", title: "Dance", text: "We'll perform five super-cute idol songs. We'd be happy if you'd pay attention to our cute choreography and costumes. Let's all get excited together!" }, img: "" }
         ]
       },
       {
         id: "club",
         title: "部活動",
+        titleEn: "Clubs",
         // 「＜すべて表示＞」の一覧のサブタイトル（上から順に表示）
         groups: [
-          { title: "食バザー", names: ["調理同好会", "茶道部"] },
-          { title: "展示",     names: ["化学部", "物理部", "生物部", "地学部", "写真部", "普通科美術部", "美術科美術部", "英語部", "書道部", "放送部"] }
+          { title: "食バザー", titleEn: "Food Bazaar", names: ["調理同好会", "茶道部"] },
+          { title: "展示", titleEn: "Exhibitions",     names: ["化学部", "物理部", "生物部", "地学部", "写真部", "普通科美術部", "美術科美術部", "英語部", "書道部", "放送部"] }
         ],
         items: [
           // ▼ 部活動の画像差し替え箇所（images/club/ファイル名.jpg を置くと自動表示）
-          { name: "化学部", yomi: "かがくぶ", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", img: "" },
-          { name: "物理部", yomi: "ぶつりぶ", file: "physics", title: "実験器具展示・自作コースターの配布", text: "物理室ではお馴染みの実験器具はもちろん、少し変わった装置を展示しています。物理学に興味がある人も、そうでない人もぜひ気軽にお越しください！", img: "" },
-          { name: "生物部", yomi: "せいぶつぶ", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", img: "" },
-          { name: "地学部", yomi: "ちがくぶ", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", img: "" },
-          { name: "写真部", yomi: "しゃしんぶ", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", img: "" },
-          { name: "普通科美術部", yomi: "ふつうかびじゅつぶ", wrap: "普通科|美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
-          { name: "美術科美術部", yomi: "びじゅつかびじゅつぶ", wrap: "美術科|美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
-          { name: "茶道部", yomi: "さどうぶ", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", img: "" },
-          { name: "英語部", yomi: "えいごぶ", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", img: "" },
-          { name: "書道部", yomi: "しょどうぶ", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", img: "" },
-          { name: "調理同好会", yomi: "ちょうりどうこうかい", file: "cooking", title: "ブルッキーの販売", text: "ブルッキーはブラウニーとクッキーを組み合わせたお菓子です。チョコの濃厚な味わいと食感が楽しめます。ぜひ一度、味わって見てください！", img: "" },
-          { name: "放送部", yomi: "ほうそうぶ", file: "broadcast", title: "観て！聴いて！放送部作品 selection", text: "第二高校放送部です。私たちが過去制作してきた、テレビ・ラジオ媒体での７～８分の番組を一挙公開！飲食がてら休憩がてら、私たちの歩みの証をご覧ください！", img: "" }
+          { name: "化学部", yomi: "かがくぶ", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", en: { name: "Chemistry Club", title: "Plastic Bottle Rockets and Liquid Nitrogen", text: "The Chemistry Club will hold plastic-bottle rocket and liquid nitrogen experiments. Learn about ethanol and liquid nitrogen and experiment with us! Held in Chemistry Room A." }, img: "" },
+          { name: "物理部", yomi: "ぶつりぶ", file: "physics", title: "実験器具展示・自作コースターの配布", text: "物理室ではお馴染みの実験器具はもちろん、少し変わった装置を展示しています。物理学に興味がある人も、そうでない人もぜひ気軽にお越しください！", en: { name: "Physics Club", title: "Experimental Equipment Exhibit & Handmade Coaster Giveaway", text: "In the physics room we're exhibiting familiar experimental instruments as well as some unusual devices. Whether or not you're interested in physics, feel free to drop by!" }, img: "" },
+          { name: "生物部", yomi: "せいぶつぶ", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", en: { name: "Biology Club", title: "A Tortoise Commemoration: Go! Turtle Race!", text: "Not so leisurely?! Come see a heated turtle race hosted by the Biology Club! Race predictions are being accepted now! Those who guess correctly will receive a special prize from the Biology Club!" }, img: "" },
+          { name: "地学部", yomi: "ちがくぶ", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", en: { name: "Earth Science Club", title: "Planetarium", text: "Step into a world of flowing stars in the planetarium. Why not take a breather in the Earth Science Club's classroom? We offer a healing time under a quiet starry sky. We look forward to seeing you‼" }, img: "" },
+          { name: "写真部", yomi: "しゃしんぶ", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", en: { name: "Photography Club", title: "Daini Photography Club Photo Gallery", text: "Many photos taken by Photography Club members are on display. If you're interested in photography or want to see all kinds of scenery, please come take a look!" }, img: "" },
+          { name: "普通科美術部", yomi: "ふつうかびじゅつぶ", wrap: "普通科|美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", en: { name: "General Course Art Club", title: "General Course Artworks & Art Workshop", text: "With the concept “Drawn Solids, Felt Art,” we offer an easy texture art experience that anyone can do. Works by General Course students are also on display, so please stop by!" }, img: "" },
+          { name: "美術科美術部", yomi: "びじゅつかびじゅつぶ", wrap: "美術科|美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", en: { name: "Art Course Art Club", title: "Art Course Art Club Exhibition", text: "Hello, we're the Art Course Art Club. This year again, Art Course students will display works made in class, in Daini Seminar, and on their own in Classrooms 2-A and 3-A. Please come see them!" }, img: "" },
+          { name: "茶道部", yomi: "さどうぶ", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", en: { name: "Tea Ceremony Club", title: "Tea-Making Experience", text: "At the festival, we'll perform the tea ceremony wearing yukata. At this tea room you can try making tea yourself. Why not experience Japanese culture, which is growing in popularity overseas?" }, img: "" },
+          { name: "英語部", yomi: "えいごぶ", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", en: { name: "English Club", title: "What a wonderful world!!!!!!!", text: "The English Club created a photo spot on the theme “Countries of the World.” Take photos with friends and make wonderful memories! We look forward to many visitors." }, img: "" },
+          { name: "書道部", yomi: "しょどうぶ", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", en: { name: "Calligraphy Club", title: "Calligraphy Performance", text: "The Calligraphy Club will liven up the festival again this year! On Day 1 the festival kicks off with a performance, and on Day 2 we hold the school calligraphy exhibition. Let's enjoy “calligraphy” together!" }, img: "" },
+          { name: "調理同好会", yomi: "ちょうりどうこうかい", file: "cooking", title: "ブルッキーの販売", text: "ブルッキーはブラウニーとクッキーを組み合わせたお菓子です。チョコの濃厚な味わいと食感が楽しめます。ぜひ一度、味わって見てください！", en: { name: "Cooking Club", title: "Selling Brookies", text: "A Brookie is a sweet that combines a brownie and a cookie. You can enjoy the rich chocolate flavor and the texture. Please give it a try!" }, img: "" },
+          { name: "放送部", yomi: "ほうそうぶ", file: "broadcast", title: "観て！聴いて！放送部作品 selection", text: "第二高校放送部です。私たちが過去制作してきた、テレビ・ラジオ媒体での７～８分の番組を一挙公開！飲食がてら休憩がてら、私たちの歩みの証をご覧ください！", en: { name: "Broadcasting Club", title: "Watch! Listen! Broadcasting Club Selection", text: "We're the Daini High School Broadcasting Club. We're showing, all at once, the 7-to-8-minute TV and radio programs we've produced in the past! Take a break with a meal or a snack and see the record of our journey." }, img: "" }
         ]
       },
       {
         id: "other",
         title: "その他団体",
+        titleEn: "Other Groups",
         // 「＜すべて表示＞」の一覧のサブタイトル（上から順に表示）
         groups: [
-          { title: "展示",     names: ["書道選択者", "美術選択者", "図書委員会", "家庭クラブ"] },
-          { title: "食バザー", names: ["育竜会", "売店"] },
-          { title: "販売",     names: ["りんどう会"] },
-          { title: "ステージ", names: ["生徒会"] }
+          { title: "展示", titleEn: "Exhibitions",     names: ["書道選択者", "美術選択者", "図書委員会", "家庭クラブ"] },
+          { title: "食バザー", titleEn: "Food Bazaar", names: ["育竜会", "売店"] },
+          { title: "販売", titleEn: "Sales",     names: ["りんどう会"] },
+          { title: "ステージ", titleEn: "Stage", names: ["生徒会"] }
         ],
         items: [
           // ▼ その他団体の画像差し替え箇所（images/other/ファイル名.jpg を置くと自動表示）
-          { name: "生徒会", yomi: "せいとかい", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", img: "" },
-          { name: "書道選択者", yomi: "しょどうせんたくしゃ", file: "shodo-sentaku", title: "二高書道展2026", text: "１年生は、自分が前向きになれる言葉を写真と絵で表現しました。２年生は、愛する故郷・熊本をテーマに作品を作りました。お気に入りの書が見つかるはずです！", img: "" },
-          { name: "美術選択者", yomi: "びじゅつせんたくしゃ", file: "art-sentaku", title: "作品展示", text: "美術選択者による作品展示です。（※紹介文の資料が無いため仮の文章です。差し替えてください）", img: "" },
-          { name: "図書委員会", yomi: "としょいいんかい", file: "library", title: "好きを語ろう 私の“推し”本パネル展", text: "「好き」を語らせて！図書委員が厳選した「推し本」の魅力を、各自１枚の特大パネルに凝縮してご紹介します。あなたも運命の「推し本」に出会えるかも！？", img: "" },
-          { name: "家庭クラブ", yomi: "かていくらぶ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", img: "" },
-          { name: "育竜会", yomi: "いくりゅうかい", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", img: "" },
-          { name: "りんどう会", yomi: "りんどうかい", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", img: "" },
-          { name: "売店", yomi: "ばいてん", file: "shop", title: "幻の手作りクッキー☆", text: "挽きたてコーヒー即完売！！幻の手作りクッキーを数種類販売。人気すぎて買えてない人！推しクッキーのある人！！当日のお楽しみに♡", img: "" }
+          { name: "生徒会", yomi: "せいとかい", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", en: { name: "Student Council", title: "Cultural Festival Grand Prize 2026", text: "A popular vote event for the whole school that closes out the festival! We announce the results of the voting in each category and award the glorious first place. At the end, we'll screen a movie made by the Student Council!" }, img: "" },
+          { name: "書道選択者", yomi: "しょどうせんたくしゃ", file: "shodo-sentaku", title: "二高書道展2026", text: "１年生は、自分が前向きになれる言葉を写真と絵で表現しました。２年生は、愛する故郷・熊本をテーマに作品を作りました。お気に入りの書が見つかるはずです！", en: { name: "Calligraphy Elective Students", title: "Daini Calligraphy Exhibition 2026", text: "First-year students expressed words that make them feel positive through photos and pictures. Second-year students made works on the theme of their beloved hometown, Kumamoto. You're sure to find a piece of calligraphy you like!" }, img: "" },
+          { name: "美術選択者", yomi: "びじゅつせんたくしゃ", file: "art-sentaku", title: "作品展示", text: "美術選択者による作品展示です。（※紹介文の資料が無いため仮の文章です。差し替えてください）", en: { name: "Art Elective Students", title: "Artwork Exhibition", text: "An exhibition of works by art elective students. (Note: This is placeholder text because no description was provided. Please replace it.)" }, img: "" },
+          { name: "図書委員会", yomi: "としょいいんかい", file: "library", title: "好きを語ろう 私の“推し”本パネル展", text: "「好き」を語らせて！図書委員が厳選した「推し本」の魅力を、各自１枚の特大パネルに凝縮してご紹介します。あなたも運命の「推し本」に出会えるかも！？", en: { name: "Library Committee", title: "Let's Talk About What We Love: “My Favorite” Book Panel Exhibition", text: "Let us talk about what we love! Each library committee member condenses the appeal of their carefully selected “favorite book” onto one giant panel. You might meet your destined favorite book!?" }, img: "" },
+          { name: "家庭クラブ", yomi: "かていくらぶ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", en: { name: "Home Economics Club", title: "Let's Learn More About Dementia", text: "Do you know about “the new dementia”? If you don't, please visit our booth and deepen your understanding of dementia. We look forward to seeing you." }, img: "" },
+          { name: "育竜会", yomi: "いくりゅうかい", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", en: { name: "Ikuryukai", title: "Ikuryukai MARCHE", text: "To help everyone enjoy the festival bazaar, we've prepared lots of delicious items such as kimbap, fried chicken, steamed pork buns, waffles, rice balls, and croquettes. We look forward to seeing you!" }, img: "" },
+          { name: "りんどう会", yomi: "りんどうかい", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", en: { name: "Rindokai (Alumni Association)", title: "Sale of Original Alumni Association Goods", text: "The Rindokai, the Daini High School alumni association, is made up of some 28,000 graduates and others. It works cheerfully and energetically toward (1) the development of our alma mater, (2) contributions to the community, and (3) friendship among its members." }, img: "" },
+          { name: "売店", yomi: "ばいてん", file: "shop", title: "幻の手作りクッキー☆", text: "挽きたてコーヒー即完売！！幻の手作りクッキーを数種類販売。人気すぎて買えてない人！推しクッキーのある人！！当日のお楽しみに♡", en: { name: "School Store", title: "Legendary Handmade Cookies ☆", text: "Freshly ground coffee sells out instantly!! We sell several kinds of legendary handmade cookies. For those who couldn't buy them because they're too popular, and for those with a favorite cookie!! Look forward to the day ♡" }, img: "" }
         ]
       }
     ];
@@ -820,11 +907,11 @@
     ================================================== */
     const FOOTER_EMBLEM = { file: "emblem", img: "" };
     const FOOTER_BANNERS = [
-      { label: "熊本県立第二高等学校 公式サイト", url: "https://kumamoto-d2hs.ed.jp/",       file: "banner1", img: "" },
-      { label: "Instagram（d2_daini）",           url: "https://www.instagram.com/d2_daini/", file: "banner2", img: "" },
-      { label: "ビッグスカイ高校",                 url: "https://bigsky.mcpsmt.org/",          file: "banner3", img: "" },
-      { label: "同窓会 りんどう会",                 url: "https://www.rindoukai.net/",          file: "banner4", img: "" },
-      { label: "科学技術振興機構（JST）",           url: "https://www.jst.go.jp/",              file: "banner5", img: "" }
+      { label: "熊本県立第二高等学校 公式サイト", labelEn: "Official Website of Kumamoto Prefectural Daini High School", url: "https://kumamoto-d2hs.ed.jp/",       file: "banner1", img: "" },
+      { label: "Instagram（d2_daini）", labelEn: "Instagram (d2_daini)",           url: "https://www.instagram.com/d2_daini/", file: "banner2", img: "" },
+      { label: "ビッグスカイ高校", labelEn: "Big Sky High School",                 url: "https://bigsky.mcpsmt.org/",          file: "banner3", img: "" },
+      { label: "同窓会 りんどう会", labelEn: "Rindokai Alumni Association",                 url: "https://www.rindoukai.net/",          file: "banner4", img: "" },
+      { label: "科学技術振興機構（JST）", labelEn: "Japan Science and Technology Agency (JST)",           url: "https://www.jst.go.jp/",              file: "banner5", img: "" }
     ];
 
     /* 自動スライドの間隔（ミリ秒）。4000〜5000が目安 */
@@ -846,8 +933,50 @@
        以下はプログラム本体（初心者の方は触らなくてOKです）
     ================================================== */
 
-    // カードに表示する団体名のHTML。wrap があれば、| の位置でだけ折り返す（例：普通科 / 美術部）
+    // ---------- 多言語（日本語 / English） ----------
+    // ・固定の文言：下の I18N（日本語 ja / 英語 en）。英語を直したいときはここ
+    // ・団体のデータ：CATEGORIES の en: { name, title, text }（団体名・企画名・紹介文）と titleEn（カテゴリ名・グループ名）
+    // ・HTML側の data-i18n="キー" が付いた場所は、言語に合わせて自動で書き換わります
+    const I18N = {
+      ja: {
+        pageTitle: "第64回 文化祭｜伝承華",
+        heroMain: "伝承華",
+        heroSub: "ー受け継ぐ想い、咲き誇る今ー",
+        subtitle: "第64回<br>文化祭",
+        viewAll: "＜すべて表示＞",
+        prev: "前へ", next: "次へ", close: "閉じる",
+        footerName: "熊本県立第二高等学校<span>Kumamoto Prefectural Daini High School</span>",
+        footerAddress: "〒862-0901 熊本県熊本市東区東町3-13-1",
+        footerAdmin: "管理者 生徒会広報担当者",
+        emblemAlt: "熊本県立第二高等学校 校章",
+        imageAlt: "の画像"
+      },
+      en: {
+        pageTitle: "The 64th Cultural Festival | Denshōka",
+        heroMain: "Denshōka",
+        heroSub: "– Inherited Feelings, Blooming Now –",
+        subtitle: "The 64th<br>Cultural Festival",
+        viewAll: "< View All >",
+        prev: "Previous", next: "Next", close: "Close",
+        footerName: "Kumamoto Prefectural Daini High School",
+        footerAddress: "3-13-1 Higashimachi, Higashi-ku, Kumamoto City, Kumamoto 862-0901, Japan",
+        footerAdmin: "Administrator: Student Council Public Relations Staff",
+        emblemAlt: "Kumamoto Prefectural Daini High School emblem",
+        imageAlt: " (image)"
+      }
+    };
+    const LANG_KEY = "bunkasai-lang";
+    let lang = "ja";                                   // 現在の言語。前回選んだ言語があれば復元
+    try { const saved = localStorage.getItem(LANG_KEY); if (saved === "ja" || saved === "en") lang = saved; } catch (e) {}
+    const t = (key) => I18N[lang][key];
+    // 団体データの文字（name / title / text）。英語のときは en の中を使い、無ければ日本語のまま
+    const itemText = (item, field) => (lang === "en" && item.en && item.en[field]) || item[field] || "";
+    const catTitle = (cat) => (lang === "en" && cat.titleEn) || cat.title;
+    const groupTitle = (g) => (lang === "en" && g.titleEn) || g.title;
+
+    // カードに表示する団体名のHTML。日本語では wrap があれば、| の位置でだけ折り返す（例：普通科 / 美術部）
     function nameHTML(item) {
+      if (lang === "en") return itemText(item, "name");
       if (!item.wrap) return item.name;
       // 外側の <span> で包む（折り返し位置を | の所だけにするため）
       return "<span>" + item.wrap.split("|").map((part) => `<span class="nb">${part}</span>`).join("<wbr>") + "</span>";
@@ -952,13 +1081,13 @@
       sec.id = "cat-" + cat.id;
       sec.innerHTML = `
         <div class="category__head">
-          <h2 class="category__title">${cat.title}</h2>
-          <button class="all-btn" type="button">＜すべて表示＞</button>
+          <h2 class="category__title">${catTitle(cat)}</h2>
+          <button class="all-btn" type="button" data-i18n="viewAll">${t("viewAll")}</button>
         </div>
         <div class="carousel">
-          <button class="carousel__btn carousel__btn--prev" type="button" aria-label="前へ">＜</button>
+          <button class="carousel__btn carousel__btn--prev" type="button" aria-label="${t("prev")}" data-i18n-aria="prev">＜</button>
           <div class="carousel__viewport"><div class="carousel__track"></div></div>
-          <button class="carousel__btn carousel__btn--next" type="button" aria-label="次へ">＞</button>
+          <button class="carousel__btn carousel__btn--next" type="button" aria-label="${t("next")}" data-i18n-aria="next">＞</button>
         </div>`;
       root.appendChild(sec);
 
@@ -1141,7 +1270,7 @@
     const detailText = document.getElementById("detailText");
     const detailImg = document.getElementById("detailImg");
     const detailClose = document.getElementById("detailClose");
-    let modalFocus = null, detailFocus = null, modalCat = null, currentDetail = null;
+    let modalFocus = null, detailFocus = null, modalCat = null, currentDetail = null, currentDetailCat = null;
 
     // どれかのポップアップが開いている間は、背景をスクロールさせない
     function updateScrollLock() {
@@ -1151,10 +1280,8 @@
     }
 
     // 一覧モーダル（その部門の全団体をグリッド表示）
-    function openModal(cat) {
-      modalFocus = document.activeElement;
-      modalCat = cat;
-      modalTitle.textContent = cat.title;
+    function renderModal(cat) {
+      modalTitle.textContent = catTitle(cat);
       if (cat.groups) {
         // グループ分けあり：サブタイトル → その団体のカード、の順に並べる
         const used = new Set();
@@ -1164,7 +1291,7 @@
         };
         let html = cat.groups.map((g) => {
           g.names.forEach((n) => used.add(n));
-          return `<h3 class="modal__group">${g.title}</h3>` + g.names.map(cardOf).join("");
+          return `<h3 class="modal__group">${groupTitle(g)}</h3>` + g.names.map(cardOf).join("");
         }).join("");
         html += cat.items.map((it, i) => (used.has(it.name) ? "" : cardHTML(it, cat, false, i))).join("");   // groupsに無い団体は最後に
         modalGrid.innerHTML = html;
@@ -1173,6 +1300,11 @@
       }
       modalGrid.querySelectorAll(".card").forEach((c) => { c.setAttribute("role", "button"); c.tabIndex = 0; });
       hydrateImages(modalGrid, cat);                         // 一覧を開いたときに初めて画像を読み込む
+    }
+    function openModal(cat) {
+      modalFocus = document.activeElement;
+      modalCat = cat;
+      renderModal(cat);
       modal.classList.add("is-open");
       updateScrollLock();
       modalClose.focus();
@@ -1184,14 +1316,21 @@
     }
 
     // 詳細モーダル：上＝団体名（＋企画名）／中＝紹介文／下＝画像 の順
+    // 詳細の文字（団体名・企画名・紹介文）を、いまの言語で入れる
+    function fillDetailText(item) {
+      detailTitle.textContent = itemText(item, "name");
+      const sub = itemText(item, "title");
+      detailSub.textContent = sub;
+      detailSub.hidden = !sub;
+      detailText.textContent = itemText(item, "text");
+      detailImg.alt = itemText(item, "name") + t("imageAlt");
+    }
     function openDetail(cat, item) {
       detailFocus = document.activeElement;
-      detailTitle.textContent = item.name;
-      detailSub.textContent = item.title || "";
-      detailSub.hidden = !item.title;
-      detailText.textContent = item.text || "";
+      fillDetailText(item);
       // 詳細の大きな画像は、ポップアップを開いたときに初めて読み込む
       currentDetail = item;
+      currentDetailCat = cat;
       detailImg.parentElement.style.removeProperty("--bg");   // 前の画像のぼかし背景を消す
       const detailBox = detailImg.parentElement;
       detailBox.hidden = true;                                  // 画像が無いときは、画像の枠ごと表示しない
@@ -1199,7 +1338,6 @@
       resolveItemImage(cat, item).then((src) => {
         if (currentDetail === item && src) { detailBox.hidden = false; detailImg.src = src; }
       });
-      detailImg.alt = item.name + "の画像";
       detail.classList.add("is-open");
       detail.querySelector(".modal__panel").scrollTop = 0;
       updateScrollLock();
@@ -1230,9 +1368,59 @@
     // Escキー：いちばん手前のポップアップから閉じる
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
+      if (!langMenu.hidden) { setLangMenu(false); langBtn.focus(); return; }   // 言語メニューが開いていれば、まずそれを閉じる
       if (detail.classList.contains("is-open")) closeDetail();
       else if (modal.classList.contains("is-open")) closeModal();
     });
+
+    // ---------- 言語の切り替え ----------
+    const langBtn = document.getElementById("langBtn");
+    const langMenu = document.getElementById("langMenu");
+    function setLangMenu(open) {
+      langMenu.hidden = !open;
+      langBtn.setAttribute("aria-expanded", String(open));
+    }
+    // 画面全体の文字を、指定した言語に切り替える（ページの再読み込みは不要）
+    function applyLang(next, save) {
+      lang = next;
+      document.documentElement.lang = next;                // CSS（英語時の横書きタイトルなど）も lang を見ています
+      document.title = t("pageTitle");
+      document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+      document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+      // フッターの校章・バナーの説明
+      document.getElementById("footerEmblem").alt = t("emblemAlt");
+      document.querySelectorAll("#footerBanners a").forEach((a, i) => {
+        const b = FOOTER_BANNERS[i];
+        const label = (lang === "en" && b.labelEn) || b.label;
+        a.setAttribute("aria-label", label);
+        const im = a.querySelector("img");
+        if (im) im.alt = label;
+      });
+      // カテゴリ名と、スライダー内のカードの団体名
+      CATEGORIES.forEach((cat) => {
+        const sec = document.getElementById("cat-" + cat.id);
+        if (!sec) return;
+        sec.querySelector(".category__title").textContent = catTitle(cat);
+        sec.querySelectorAll(".card").forEach((card) => {
+          card.querySelector(".card__name").innerHTML = nameHTML(cat.items[Number(card.dataset.i)]);
+        });
+      });
+      // 開いているポップアップも、その場で言語を切り替える
+      if (modal.classList.contains("is-open") && modalCat) renderModal(modalCat);
+      if (detail.classList.contains("is-open") && currentDetail) fillDetailText(currentDetail);
+      // 言語メニューの選択中マーク
+      langMenu.querySelectorAll("button[data-lang]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === next)));
+      if (save) { try { localStorage.setItem(LANG_KEY, next); } catch (e) {} }
+    }
+    langBtn.addEventListener("click", () => setLangMenu(langMenu.hidden));
+    langMenu.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-lang]");
+      if (!b) return;
+      applyLang(b.dataset.lang, true);
+      setLangMenu(false);
+    });
+    document.addEventListener("click", (e) => { if (!e.target.closest("#lang")) setLangMenu(false); });   // 外側をタップで閉じる
 
     // ---------- 並び順（自動）----------
     // ・「2年2組」のような学年つきクラス：2年 → 1年、同じ学年の中は組順（1,2,… → A → S）
@@ -1409,6 +1597,9 @@
 
     // URLの末尾に ?imgcheck を付けて開いたときだけ、画像の確認結果を表示
     if (new URLSearchParams(location.search).has("imgcheck")) heroReady.then(showImageCheck);
+
+    // 起動時：保存されている（または初期の）言語を、画面全体に反映
+    applyLang(lang, false);
   </script>
 </body>
 </html>
