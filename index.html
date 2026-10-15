@@ -28,11 +28,11 @@
       color-scheme: dark light;
       /* ▼ ダークモード（初期値） */
       --ink: #15131a;          /* ページ背景 */
-      --ink-soft: #1f1c27;     /* モーダル・マップ枠の背景 */
+      --ink-soft: #1f1c27;     /* モーダルなどの背景 */
       --sakura: #e8a6b6;       /* アクセント色（桜） */
       --text: #ffffff;         /* 文字色 */
       --line: rgba(255, 255, 255, 0.5);       /* ボタンの枠線 */
-      --card-border: rgba(255, 255, 255, 0.14); /* カード・マップの枠線 */
+      --card-border: rgba(255, 255, 255, 0.14); /* カードの枠線 */
       --card-w: 260px;           /* カードの幅（カルーセルはJSが画面幅から自動計算します） */
       --gap: 16px;               /* カード同士のすき間（スマホは下のmediaで10px） */
       --pad: clamp(1rem, 4vw, 3rem);          /* 左端の余白 */
@@ -62,7 +62,7 @@
     /* ★横スクロール（横揺れ）防止：画面幅を超えた部分は切り取る */
     html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
     @supports (overflow: clip) { html, body { overflow-x: clip; } }
-    .hero, .categories, .category, .map { max-width: 100%; overflow-x: hidden; }
+    .hero, .categories, .category { max-width: 100%; overflow-x: hidden; }
 
     html { scroll-behavior: smooth; }
 
@@ -421,58 +421,6 @@
     }
     .modal__group:first-child { margin-top: 0; }
 
-    /* ==================================================
-       4. 校内マップ（階層選択）
-    ================================================== */
-    .map {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 var(--pad) clamp(3rem, 8vw, 6rem);
-    }
-    .map__tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1rem; }
-    .map__tab {
-      font-family: inherit;
-      font-size: 1rem;
-      letter-spacing: 0.1em;
-      padding: 0.5rem 1.4rem;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: none;
-      color: var(--text);
-      cursor: pointer;
-      transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-    }
-    .map__tab:hover, .map__tab:focus-visible { border-color: var(--sakura); outline: none; }
-    .map__tab[aria-selected="true"] { background: var(--sakura); border-color: var(--sakura); color: var(--ink); }
-    /* マップのスライダー */
-    .map__slider {
-      position: relative;
-      aspect-ratio: 297 / 210;      /* マップもA4横向きに合わせる */
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      overflow: hidden;
-      background: var(--ink-soft);
-    }
-    .map__viewport { height: 100%; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
-    .map__track { display: flex; height: 100%; transition: transform 0.25s ease-out; will-change: transform; }
-    .map__track.is-dragging { transition: none; cursor: grabbing; }
-    .map__slide { flex: 0 0 100%; height: 100%; background: rgba(128, 128, 128, 0.3); }   /* 画像が無いときはグレーの空枠 */
-    .map__slide img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; }
-    .map__slide img.is-ready { opacity: 1; }
-    /* いま表示中の階（左上のバッジ） */
-    .map__badge {
-      position: absolute;
-      top: 0.8rem;
-      left: 0.8rem;
-      z-index: 2;
-      padding: 0.2rem 0.9rem;
-      border-radius: 999px;
-      background: var(--sakura);
-      color: var(--ink);
-      font-size: 1.1rem;
-      letter-spacing: 0.1em;
-    }
-
     /* スマホ表示（JS側の MOBILE_MAX_WIDTH と同じ値にしてください） */
     /* ==================================================
        団体の詳細ポップアップ
@@ -643,22 +591,6 @@
   <main class="categories" id="categories"></main>
 
   <!-- ==================================================
-       校内マップ（階層選択）
-       ※タブと画像は下の <script> 内の「FLOORS」から自動生成されます。
-  ================================================== -->
-  <section class="map" id="map">
-    <h2 class="category__title">校内マップ</h2>
-    <div class="map__tabs" id="mapTabs" role="tablist" aria-label="階を選択"></div>
-    <!-- 左右の矢印・スワイプ・ドラッグで階を切り替え。画像の差し替えは下の <script> の FLOORS で -->
-    <div class="map__slider" role="tabpanel">
-      <span class="map__badge" id="mapBadge">1F</span>
-      <button class="carousel__btn carousel__btn--prev" id="mapPrev" type="button" aria-label="前の階">＜</button>
-      <div class="map__viewport" id="mapViewport"><div class="map__track" id="mapTrack"></div></div>
-      <button class="carousel__btn carousel__btn--next" id="mapNext" type="button" aria-label="次の階">＞</button>
-    </div>
-  </section>
-
-  <!-- ==================================================
        フッター（校章・学校情報・リンクバナー）
        ・校章／バナー画像の差し替え：images/footer/ に emblem.png, banner1.jpg 〜 banner5.jpg を置く
          （詳しくは下の <script> 内「★フッターの設定」）
@@ -725,6 +657,9 @@
          ※この画像は、カードの背景と、詳細ポップアップの下部（紹介文の下）に使われます。
        ■ 各団体のデータの意味：
            name  = カードに表示する団体名
+           yomi  = 読み（ひらがな）。50音順の並び替え用（「2年2組」のような学年つきクラスには不要）
+           ※並び順は自動：学年つきクラスは「2年→1年」・組順、それ以外は yomi の50音順
+             （スライダーも「＜すべて表示＞」の一覧も同じ。groups の中も同じ順）
            wrap  = 2段に折り返すときの改行位置（任意）。"普通科|美術部" のように | で区切る。
                    カードが狭くなって2段になるとき、| の位置でだけ改行されます。不要なら書かなくてOK
            file  = 画像のファイル名（半角英数。images/カテゴリid/file.jpg）
@@ -786,20 +721,20 @@
         title: "有志発表",
         // 「＜すべて表示＞」の一覧だけ、この見出しでグループ分けして表示（スライダーの並びは変わりません）
         groups: [
-          { title: "体育館(ステージ)", names: ["grows", "金木犀", "SONMINS", "24時30分", "ロングヘア"] },
-          { title: "中庭",             names: ["いぬやさい", "かにクラブ", "GIRLs", "ニコLOVE"] }
+          { title: "体育館(ステージ)", names: ["金木犀", "grows", "SONMINS", "24時30分"] },
+          { title: "中庭",             names: ["いぬやさい", "かにクラブ", "GIRLs", "ニコLOVE", "ロングヘア"] }
         ],
         items: [
           // ▼ 有志発表の画像差し替え箇所（images/yushi/ファイル名.jpg を置くと自動表示）
-          { name: "grows", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", img: "" },
-          { name: "GIRLs", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", img: "" },
-          { name: "金木犀", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", img: "" },
-          { name: "SONMINS", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", img: "" },
-          { name: "24時30分", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", img: "" },
-          { name: "かにクラブ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", img: "" },
-          { name: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", img: "" },
-          { name: "ロングヘア", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", img: "" },
-          { name: "ニコLOVE", file: "nico-love", title: "ダンス", text: "私たちはかわいいかわいいアイドルソングを5曲披露します。かわいい振り付けや衣装に注目してくださると嬉しいです。全員で一緒に盛り上がりましょう！", img: "" }
+          { name: "grows", yomi: "ぐろうず", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", img: "" },
+          { name: "GIRLs", yomi: "がるず", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", img: "" },
+          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", img: "" },
+          { name: "SONMINS", yomi: "そんみんず", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", img: "" },
+          { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", img: "" },
+          { name: "かにクラブ", yomi: "かにくらぶ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", img: "" },
+          { name: "いぬやさい", yomi: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", img: "" },
+          { name: "ロングヘア", yomi: "ろんぐへあ", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", img: "" },
+          { name: "ニコLOVE", yomi: "にこらぶ", file: "nico-love", title: "ダンス", text: "私たちはかわいいかわいいアイドルソングを5曲披露します。かわいい振り付けや衣装に注目してくださると嬉しいです。全員で一緒に盛り上がりましょう！", img: "" }
         ]
       },
       {
@@ -812,18 +747,18 @@
         ],
         items: [
           // ▼ 部活動の画像差し替え箇所（images/club/ファイル名.jpg を置くと自動表示）
-          { name: "化学部", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", img: "" },
-          { name: "物理部", file: "physics", title: "実験器具展示・自作コースターの配布", text: "物理室ではお馴染みの実験器具はもちろん、少し変わった装置を展示しています。物理学に興味がある人も、そうでない人もぜひ気軽にお越しください！", img: "" },
-          { name: "生物部", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", img: "" },
-          { name: "地学部", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", img: "" },
-          { name: "写真部", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", img: "" },
-          { name: "普通科美術部", wrap: "普通科|美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
-          { name: "美術科美術部", wrap: "美術科|美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
-          { name: "茶道部", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", img: "" },
-          { name: "英語部", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", img: "" },
-          { name: "書道部", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", img: "" },
-          { name: "調理同好会", file: "cooking", title: "ブルッキーの販売", text: "ブルッキーはブラウニーとクッキーを組み合わせたお菓子です。チョコの濃厚な味わいと食感が楽しめます。ぜひ一度、味わって見てください！", img: "" },
-          { name: "放送部", file: "broadcast", title: "観て！聴いて！放送部作品 selection", text: "第二高校放送部です。私たちが過去制作してきた、テレビ・ラジオ媒体での７～８分の番組を一挙公開！飲食がてら休憩がてら、私たちの歩みの証をご覧ください！", img: "" }
+          { name: "化学部", yomi: "かがくぶ", file: "chemistry", title: "ペットボトルロケットと液体窒素", text: "私たち化学部では、ペットボトルロケットと、液体窒素を使った実験を行います。エタノールや液体窒素について学び、一緒に実験しましょう！化学室Aで行います。", img: "" },
+          { name: "物理部", yomi: "ぶつりぶ", file: "physics", title: "実験器具展示・自作コースターの配布", text: "物理室ではお馴染みの実験器具はもちろん、少し変わった装置を展示しています。物理学に興味がある人も、そうでない人もぜひ気軽にお越しください！", img: "" },
+          { name: "生物部", yomi: "せいぶつぶ", file: "biology", title: "有「亀」記念 出走！カメレース！", text: "のんびりじゃない！？生物部主催、カメたちの白熱したレースを見に来ませんか？ただいま出走予想を受付中！当てた方には生物部特製の景品をプレゼントします！", img: "" },
+          { name: "地学部", yomi: "ちがくぶ", file: "earth-science", title: "プラネタリウム", text: "プラネタリウムで流れる星の世界へ。地学部の教室で、ほっと一息つきませんか。癒しの時間をお届けします。静かな星空の下であなたのお越しをお待ちしてます‼", img: "" },
+          { name: "写真部", yomi: "しゃしんぶ", file: "photo", title: "二高写真部写真界館", text: "写真部員が撮った沢山の写真をかざっています。写真に興味のある方、いろいろな景色が見てみたい方など、ぜひ一度見に来てみてください！", img: "" },
+          { name: "普通科美術部", yomi: "ふつうかびじゅつぶ", wrap: "普通科|美術部", file: "art-general", title: "普通科作品展示 and アートワークショップ", text: "「描く立体、感じるアート」をコンセプトに、誰でも簡単にできるテクスチャーアート体験を行います。普通科作品も展示しているので、ぜひお越しください！", img: "" },
+          { name: "美術科美術部", yomi: "びじゅつかびじゅつぶ", wrap: "美術科|美術部", file: "art-course", title: "美術科美術部制作展", text: "こんにちは、美術科美術部です。今年も２−A、３ーA教室で美術科の生徒が授業や二高ゼミ、自主的に制作した作品を展示します。ぜひ見に来てください！", img: "" },
+          { name: "茶道部", yomi: "さどうぶ", file: "tea", title: "お茶点て体験", text: "文化祭では浴衣を着てお点前（おてまえ）を披露させていただきます。このお茶席ではお茶を点（た）てる体験ができます。海外で人気が高まっている日本の文化を体験しませんか。", img: "" },
+          { name: "英語部", yomi: "えいごぶ", file: "english", title: "What a wonderful world!!!!!!!", text: "英語部では「世界の国々」をテーマにフォトスポットを作成しました。友達と写真を撮って、素敵な思い出を作って下さい！たくさんの来客待ってます。", img: "" },
+          { name: "書道部", yomi: "しょどうぶ", file: "calligraphy", title: "書道パフォーマンス", text: "私たち書道部は今年も文化祭を盛り上げます！１日目はパフォーマンスで文化祭がスタートし、２日目は、校内書道展を行います。「書」を一緒に楽しみましょう！", img: "" },
+          { name: "調理同好会", yomi: "ちょうりどうこうかい", file: "cooking", title: "ブルッキーの販売", text: "ブルッキーはブラウニーとクッキーを組み合わせたお菓子です。チョコの濃厚な味わいと食感が楽しめます。ぜひ一度、味わって見てください！", img: "" },
+          { name: "放送部", yomi: "ほうそうぶ", file: "broadcast", title: "観て！聴いて！放送部作品 selection", text: "第二高校放送部です。私たちが過去制作してきた、テレビ・ラジオ媒体での７～８分の番組を一挙公開！飲食がてら休憩がてら、私たちの歩みの証をご覧ください！", img: "" }
         ]
       },
       {
@@ -838,34 +773,16 @@
         ],
         items: [
           // ▼ その他団体の画像差し替え箇所（images/other/ファイル名.jpg を置くと自動表示）
-          { name: "生徒会", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", img: "" },
-          { name: "書道選択者", file: "shodo-sentaku", title: "二高書道展2026", text: "１年生は、自分が前向きになれる言葉を写真と絵で表現しました。２年生は、愛する故郷・熊本をテーマに作品を作りました。お気に入りの書が見つかるはずです！", img: "" },
-          { name: "美術選択者", file: "art-sentaku", title: "作品展示", text: "美術選択者による作品展示です。（※紹介文の資料が無いため仮の文章です。差し替えてください）", img: "" },
-          { name: "図書委員会", file: "library", title: "好きを語ろう 私の“推し”本パネル展", text: "「好き」を語らせて！図書委員が厳選した「推し本」の魅力を、各自１枚の特大パネルに凝縮してご紹介します。あなたも運命の「推し本」に出会えるかも！？", img: "" },
-          { name: "家庭クラブ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", img: "" },
-          { name: "育竜会", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", img: "" },
-          { name: "りんどう会", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", img: "" },
-          { name: "売店", file: "shop", title: "幻の手作りクッキー☆", text: "挽きたてコーヒー即完売！！幻の手作りクッキーを数種類販売。人気すぎて買えてない人！推しクッキーのある人！！当日のお楽しみに♡", img: "" }
+          { name: "生徒会", yomi: "せいとかい", file: "student-council", title: "文化祭大賞2026", text: "文化祭を締めくくる、全校生徒参加の人気投票企画！各部門の投票の結果を発表し、栄えある第一位を表彰します。最後には、生徒会制作のムービーを上映します！", img: "" },
+          { name: "書道選択者", yomi: "しょどうせんたくしゃ", file: "shodo-sentaku", title: "二高書道展2026", text: "１年生は、自分が前向きになれる言葉を写真と絵で表現しました。２年生は、愛する故郷・熊本をテーマに作品を作りました。お気に入りの書が見つかるはずです！", img: "" },
+          { name: "美術選択者", yomi: "びじゅつせんたくしゃ", file: "art-sentaku", title: "作品展示", text: "美術選択者による作品展示です。（※紹介文の資料が無いため仮の文章です。差し替えてください）", img: "" },
+          { name: "図書委員会", yomi: "としょいいんかい", file: "library", title: "好きを語ろう 私の“推し”本パネル展", text: "「好き」を語らせて！図書委員が厳選した「推し本」の魅力を、各自１枚の特大パネルに凝縮してご紹介します。あなたも運命の「推し本」に出会えるかも！？", img: "" },
+          { name: "家庭クラブ", yomi: "かていくらぶ", file: "katei", title: "認知症をもっと知ろう", text: "皆さんは『新しい認知症』を知っていますか？知らない方は、ぜひ、私たちのブースに訪れ、認知症について理解を深めてください。お待ちしています。", img: "" },
+          { name: "育竜会", yomi: "いくりゅうかい", file: "ikuryu", title: "育竜会 MARCHE", text: "文化祭バザーを楽しんでいただけるようにキンパ、唐揚げ、豚まん、ワッフル、おにぎりやコロッケ等美味しいものをたくさん用意して皆様をお待ちしております！", img: "" },
+          { name: "りんどう会", yomi: "りんどうかい", file: "rindo", title: "同窓会オリジナルグッズの販売", text: "第二高校同窓会りんどう会は、２万８千人余の卒業生等で構成され①母校の発展②地域への貢献③会員相互の親睦を目的に明るく楽しく元気よく活動しています。", img: "" },
+          { name: "売店", yomi: "ばいてん", file: "shop", title: "幻の手作りクッキー☆", text: "挽きたてコーヒー即完売！！幻の手作りクッキーを数種類販売。人気すぎて買えてない人！推しクッキーのある人！！当日のお楽しみに♡", img: "" }
         ]
       }
-    ];
-
-    /* ==================================================
-       ★校内マップの設定
-       ■ 画像の差し替え（かんたん）：images/map/1f.png のように置くだけで自動表示されます
-           （1f=1階, 2f=2階 …／.jpg .jpeg .png .webp に対応／なければグレーの空枠）
-         ※img にURLを書くと、そちらが優先されます。
-       ■ 階の追加：配列に { label: "5階", tag: "5F", file: "5f", img: "" } を足すと階も増えます（tag は「5F」表示用）
-    ================================================== */
-    const FLOORS = [
-      // ▼ 1階のマップ画像差し替え箇所
-      { label: "1階", tag: "1F", file: "1f", img: "" },
-      // ▼ 2階のマップ画像差し替え箇所
-      { label: "2階", tag: "2F", file: "2f", img: "" },
-      // ▼ 3階のマップ画像差し替え箇所
-      { label: "3階", tag: "3F", file: "3f", img: "" },
-      // ▼ 4階のマップ画像差し替え箇所
-      { label: "4階", tag: "4F", file: "4f", img: "" }
     ];
 
     /* ==================================================
@@ -880,8 +797,7 @@
           ├─ stage/1-3.jpg     ← ステージ
           ├─ yushi/grows.jpg   ← 有志発表
           ├─ club/chemistry.jpg ← 部活動（ファイル名は各団体の file の値）
-          ├─ other/shop.jpg    ← その他団体
-          └─ map/1f.png        ← 校内マップ（2f.png, 3f.png, 4f.png）
+          └─ other/shop.jpg    ← その他団体
 
        ・ファイル名は半角英数字で、大文字小文字も正確に（GitHub Pagesは区別します）
        ・拡張子は .jpg .jpeg .png .webp（大文字の .JPG なども可）。画像が無い所は空欄（グレーの枠など）になります
@@ -986,17 +902,6 @@
         })();
       }
       return item._p;
-    }
-    // マップ1階ぶんの画像を決める
-    function resolveFloorImage(f) {
-      if (!f._p) {
-        f._p = (async () => {
-          f.found = f.img || (f.file ? await findImage("map", f.file) : "");
-          f.src = f.found;                            // 画像が無いときは "" のまま（仮画像は出さない）
-          return f.src;
-        })();
-      }
-      return f._p;
     }
     // コンテナ内のカード画像に、実際の src を設定する（まだ設定されていないものだけ）
     function hydrateImages(container, cat) {
@@ -1329,100 +1234,34 @@
       else if (modal.classList.contains("is-open")) closeModal();
     });
 
-    // ---------- 校内マップ（スライダー） ----------
-    const mapTabs = document.getElementById("mapTabs");
-    const mapTrack = document.getElementById("mapTrack");
-    const mapViewport = document.getElementById("mapViewport");
-    const mapPrev = document.getElementById("mapPrev");
-    const mapNext = document.getElementById("mapNext");
-    const mapBadge = document.getElementById("mapBadge");
-    let floorIdx = 0;
-
-    // 階のインジケーター（1F 2F 3F 4F）
-    const tabButtons = FLOORS.map((floor, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "map__tab";
-      b.setAttribute("role", "tab");
-      b.textContent = floor.tag || floor.label;
-      b.addEventListener("click", () => goFloor(i));
-      mapTabs.appendChild(b);
-      return b;
-    });
-
-    function renderMap() {
-      mapTrack.style.transform = `translateX(${-floorIdx * 100}%)`;
-      tabButtons.forEach((b, j) => b.setAttribute("aria-selected", String(j === floorIdx)));
-      mapPrev.disabled = floorIdx === 0;
-      mapNext.disabled = floorIdx === FLOORS.length - 1;
-      mapBadge.textContent = FLOORS[floorIdx].tag || FLOORS[floorIdx].label;
-      if (mapActive) loadMapImages();
+    // ---------- 並び順（自動）----------
+    // ・「2年2組」のような学年つきクラス：2年 → 1年、同じ学年の中は組順（1,2,… → A → S）
+    // ・それ以外の団体：yomi（ひらがな）の50音順
+    // ・クラスとそれ以外が同じカテゴリにあるときは、クラスが先
+    function classKey(item) {
+      const m = item.name.match(/^(\d)年(.+)組$/);
+      if (!m) return null;
+      return { grade: Number(m[1]), kumi: /^\d+$/.test(m[2]) ? Number(m[2]) : 1000 + m[2].charCodeAt(0) };
     }
-    function goFloor(i) {
-      floorIdx = Math.max(0, Math.min(FLOORS.length - 1, i));
-      renderMap();
+    const jaCollator = new Intl.Collator("ja");
+    function compareItems(a, b) {
+      const ka = classKey(a), kb = classKey(b);
+      if (ka && kb) return (kb.grade - ka.grade) || (ka.kumi - kb.kumi);
+      if (ka) return -1;
+      if (kb) return 1;
+      return jaCollator.compare(a.yomi || a.name, b.yomi || b.name);
     }
-    // マップ画像は、マップが画面の近くに来てから、表示中の階と前後1階だけ読み込む
-    let mapActive = false;
-    function loadMapImages() {
-      [floorIdx - 1, floorIdx, floorIdx + 1].forEach((i) => {
-        const f = FLOORS[i];
-        if (!f) return;
-        const img = mapTrack.children[i] && mapTrack.children[i].querySelector("img");
-        if (!img || img.getAttribute("src")) return;
-        resolveFloorImage(f).then((src) => { if (src && !img.getAttribute("src")) img.src = src; });
+    CATEGORIES.forEach((cat) => {
+      cat.items.sort(compareItems);
+      (cat.groups || []).forEach((g) => {
+        const byName = (n) => cat.items.find((it) => it.name === n) || { name: n };
+        g.names.sort((x, y) => compareItems(byName(x), byName(y)));
       });
-    }
-    function buildMap() {
-      mapTrack.innerHTML = FLOORS.map((f) =>
-        `<div class="map__slide blurbg"><img alt="${f.label}の校内マップ" draggable="false" decoding="async"></div>`
-      ).join("");
-      renderMap();
-    }
-
-    mapPrev.addEventListener("click", () => goFloor(floorIdx - 1));
-    mapNext.addEventListener("click", () => goFloor(floorIdx + 1));
-    // ←→キーでも切り替え
-    mapTabs.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-      goFloor(floorIdx + (e.key === "ArrowRight" ? 1 : -1));
-      tabButtons[floorIdx].focus();
     });
-
-    // スワイプ／ドラッグ（指でもマウスでも）
-    let mDrag = false, mStartX = 0, mDx = 0;
-    mapViewport.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      mDrag = true;
-      mStartX = e.clientX;
-      mDx = 0;
-      mapViewport.setPointerCapture(e.pointerId);
-      mapTrack.classList.add("is-dragging");
-    });
-    mapViewport.addEventListener("pointermove", (e) => {
-      if (!mDrag) return;
-      mDx = e.clientX - mStartX;
-      let dx = mDx;
-      if ((floorIdx === 0 && dx > 0) || (floorIdx === FLOORS.length - 1 && dx < 0)) dx *= 0.3; // 端では重く
-      mapTrack.style.transform = `translateX(${-floorIdx * mapViewport.clientWidth + dx}px)`;
-    });
-    function mapEndDrag() {
-      if (!mDrag) return;
-      mDrag = false;
-      mapTrack.classList.remove("is-dragging");
-      const threshold = Math.min(mapViewport.clientWidth * 0.2, 60);
-      if (mDx < -threshold) goFloor(floorIdx + 1);
-      else if (mDx > threshold) goFloor(floorIdx - 1);
-      else renderMap();
-    }
-    mapViewport.addEventListener("pointerup", mapEndDrag);
-    mapViewport.addEventListener("pointercancel", mapEndDrag);
 
     // ---------- 表示の組み立て ----------
-    // カードとマップの枠は先に作り、画像は「画面の近くに来たとき」に読み込みます（初期表示を軽くするため）
+    // カードの枠は先に作り、画像は「画面の近くに来たとき」に読み込みます（初期表示を軽くするため）
     buildCategories();
-    buildMap();
-    whenNear(document.getElementById("map"), () => { mapActive = true; loadMapImages(); });
 
     // ---------- フッター（校章・リンクバナー） ----------
     // バナーのリンクを作る（画像は近くに来てから読み込む）
@@ -1449,14 +1288,12 @@
     async function showImageCheck() {
       const jobs = [];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) => jobs.push(resolveItemImage(cat, it))));
-      FLOORS.forEach((f) => jobs.push(resolveFloorImage(f)));
       jobs.push(loadFooterImages());
       await Promise.all(jobs);
       const heroFound = heroImg.naturalWidth > 0;
       const rows = [[heroFound, "ヒーロー背景", IMAGE_FOLDER + "/hero.jpg"]];
       CATEGORIES.forEach((cat) => cat.items.forEach((it) =>
         rows.push([!!it.found, cat.title + "：" + it.name, IMAGE_FOLDER + "/" + cat.id + "/" + it.file + ".jpg"])));
-      FLOORS.forEach((f) => rows.push([!!f.found, "マップ：" + f.label, IMAGE_FOLDER + "/map/" + f.file + ".png"]));
       rows.push([!!FOOTER_EMBLEM.found, "フッター：校章", IMAGE_FOLDER + "/footer/" + FOOTER_EMBLEM.file + ".png"]);
       FOOTER_BANNERS.forEach((b) => rows.push([!!b.found, "フッター：" + b.label, IMAGE_FOLDER + "/footer/" + b.file + ".jpg"]));
       const ok = rows.filter((r) => r[0]).length;
