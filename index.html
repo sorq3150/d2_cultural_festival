@@ -2,7 +2,8 @@
 <html lang="ja" class="is-locked">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- viewport-fit=cover：ノッチ・ホームバーの裏（画面の端まで）に表示を広げる -->
   <meta name="color-scheme" content="dark light">
 
   <!-- リロード・戻る操作でも、前回のスクロール位置を復元せず、必ず最上部から始める -->
@@ -76,7 +77,7 @@
     }
 
     /* スクロールを止める場合：
-       ・is-locked   … ページを開いてから、縦書きタイトルの表示が完了するまで
+       ・is-locked   … ページを開いてから、タイトル表示 → 見出しボックス群の読み込みが完了するまで
        ・modal-open  … ポップアップ（モーダル）表示中 */
     html.is-locked, html.is-locked body,
     html.modal-open, html.modal-open body { overflow: hidden; }
@@ -91,12 +92,19 @@
          ① 100vh：古いブラウザ用  ② --app-h：JSで測った実際に見える高さ（LINE/Instagram等のアプリ内ブラウザ用）
          ③ 100svh：アドレスバーが出ている状態の高さ。アドレスバーの出入りでヒーローの大きさが
             変わらないので、画像のチラつきを防げます（dvh を使うとスクロール中に大きさが変わるため svh を採用） */
+      /* ★ヒーロー（背景画像）は「いちばん大きい画面の高さ（100lvh）」にして、ブラウザの下のボタン・アドレスバーの
+         奥（画面の最下部）まで隙間なく敷く。lvh は固定なので、バーの出入りで大きさが変わらずチラつかない。
+         ・古いブラウザ：100vh → --app-h（JSで測った高さ）の順に代わりを使う
+         ・文字（タイトル・サブタイトル・Scroll）は、バーに隠れないよう「実際に見える高さ(--vis-h)」の範囲に配置する */
+      --vis-h: var(--app-h, 100vh);
       height: 100vh;
       height: var(--app-h, 100vh);
-      height: 100svh;
+      height: 100lvh;
       overflow: hidden;
+      contain: paint;                    /* ヒーローの再描画を内側に閉じ込めて、チラつきを減らす */
       background: #4a4a4a;   /* 背景画像が無いときのグレーの背景（空欄） */
     }
+    @supports (height: 100lvh) { .hero { --vis-h: 100svh; } }   /* 見える高さ＝バーが出ている状態の高さ */
 
     /* ★背景画像：HTML内の <img class="hero__bg"> の src を差し替え */
     .hero__bg {
@@ -107,6 +115,7 @@
       object-fit: cover;         /* 縦長の画面（スマホ縦）は画面いっぱいに表示 */
       object-position: center;
       transform: translateZ(0);          /* GPUで描画してチラつきを防ぐ */
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
     }
 
@@ -123,6 +132,7 @@
       object-position: center;
       filter: blur(28px) brightness(0.85);   /* ぼかしの強さ・明るさはここで調整 */
       transform: scale(1.15) translateZ(0);  /* ぼかした縁が見えないよう少し拡大（GPU描画） */
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
     }
     @media (min-aspect-ratio: 1 / 1) {
@@ -132,7 +142,8 @@
 
     .hero__content {
       position: absolute;
-      inset: 0;
+      inset: 0 0 auto 0;
+      height: var(--vis-h, 100%);        /* タイトルは「見える範囲」の中央に置く */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -148,6 +159,7 @@
       white-space: nowrap;             /* 勝手に折り返さない（改行はHTML内で指定した位置だけ） */
       padding: min(2.5rem, 4vh) min(1.8rem, 3vw);
       transform: translateZ(0);          /* GPUで描画してチラつきを防ぐ */
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       will-change: opacity;
       /* 背景ではなく影で文字を際立たせる（濃さ・広がりはここで調整） */
@@ -168,13 +180,14 @@
     .title-horizontal {
       position: absolute;
       left: clamp(1rem, 3vw, 3rem);
-      bottom: clamp(1rem, 4vh, 2.5rem);
+      bottom: calc(100% - var(--vis-h, 100%) + clamp(1rem, 4vh, 2.5rem) + env(safe-area-inset-bottom, 0px));   /* 見える範囲の下端から */
       color: #fff;
       font-weight: 900;
       font-size: clamp(0.9rem, min(4.2vw, 5vh), 1.8rem);   /* 画面に合わせて自動調整 */
       line-height: 1.3;
       letter-spacing: 0.08em;
       white-space: nowrap;
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;       /* GPUで描画してチラつきを防ぐ */
       will-change: transform, opacity;
       -webkit-text-stroke: 1px #000;
@@ -188,28 +201,38 @@
     .scroll-hint {
       position: absolute;
       left: 50%;
-      bottom: clamp(1rem, 4vh, 2.5rem);
-      transform: translateX(-50%);
-      background: none;
-      border: 0;
+      bottom: calc(100% - var(--vis-h, 100%) + clamp(1rem, 4vh, 2.5rem) + env(safe-area-inset-bottom, 0px));
+      transform: translate3d(-50%, 0, 0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      padding: 0.5rem 1.6rem 0.4rem;
+      border: 2px solid rgba(255, 255, 255, 0.85);   /* 白い枠 */
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);               /* 写真の上でも読めるよう、濃い半透明の丸い帯 */
       cursor: pointer;
       color: #fff;
       font-family: inherit;
-      font-weight: 300;
-      font-size: 1rem;
-      letter-spacing: 0.2em;
-      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+      font-weight: 400;
+      font-size: clamp(1.4rem, 5vw, 2rem);           /* 以前（1rem）の約1.4〜2倍の大きさ */
+      letter-spacing: 0.25em;
+      text-indent: 0.25em;                           /* 文字間の右端ぶんをそろえて、中央に見えるように */
+      line-height: 1.2;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.9);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
       opacity: 0;
       pointer-events: none;
       transition: opacity 1s ease;
     }
     .scroll-hint.is-visible { opacity: 1; pointer-events: auto; }
-    .scroll-hint span { display: inline-block; animation: bob 1.6s ease-in-out infinite; }
+    .scroll-hint span { display: block; font-size: 1.4em; line-height: 1; animation: bob 1.6s ease-in-out infinite; }   /* ↓ を大きく、上下に動かす */
 
     /* アニメーションの流れ
        ① 背景画像の読み込み完了 → 縦書きタイトルが 1.1秒でフェードイン（0.2秒後に開始）
-       ② 縦書きの表示が完了した瞬間（JSが .is-title-done を付ける）に、
-          ・スクロール解禁  ・横書きサブタイトルが左からスライドイン  ・「Scroll ↓」表示 を同時に行う */
+       ② 縦書きの表示が完了した瞬間（JSが .is-title-done を付ける）に、横書きサブタイトルが左からスライドイン。
+          同時に、下の見出しボックス群の読み込みを始め、完了したら「Scroll」案内を表示してスクロールを解禁する */
     .is-loaded .title-vertical        { animation: fadeIn 1.1s ease-out 0.2s forwards; }
     .is-title-done .title-horizontal  { animation: slideInFromLeft 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
@@ -235,7 +258,7 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 1rem;
-      padding: 0 clamp(1rem, 4vw, 3rem);
+      padding: 0 max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-right, 0px)) 0 max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-left, 0px));
       margin-bottom: 1rem;
     }
     .category__title {
@@ -279,6 +302,7 @@
       width: max-content;
       /* 左の余白は、中央のカードが真ん中に来るようJavaScriptが自動で設定します */
       will-change: transform;
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
     }
 
@@ -296,7 +320,9 @@
       inset: 0;
       background: var(--bg) center / cover no-repeat;
       filter: blur(14px);                /* ぼかしの強さ */
-      transform: scale(1.3);             /* ぼかした縁が見えないよう拡大 */
+      transform: scale(1.3) translateZ(0);   /* ぼかした縁が見えないよう拡大（GPUで描画してチラつきを防ぐ） */
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
 
     /* 画像の枠（団体名は画像に重ねず、この下に表示します） */
@@ -317,6 +343,7 @@
       object-position: center;
       max-width: 100%;
       pointer-events: none;
+      -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       opacity: 0;                       /* 読み込み完了まで非表示 → ふわっと表示（チラつき防止） */
       transition: opacity 0.35s ease;
@@ -476,7 +503,7 @@
     .footer {
       border-top: 1px solid var(--card-border);
       background: var(--ink-soft);
-      padding: clamp(2rem, 6vw, 3.5rem) var(--pad) calc(clamp(1.5rem, 4vw, 2.5rem) + 3.5rem + env(safe-area-inset-bottom, 0px));   /* 下に余白＝右下の地球ボタンと重ならないように */
+      padding: clamp(2rem, 6vw, 3.5rem) max(var(--pad), env(safe-area-inset-right, 0px)) calc(clamp(1.5rem, 4vw, 2.5rem) + 3.5rem + env(safe-area-inset-bottom, 0px)) max(var(--pad), env(safe-area-inset-left, 0px));   /* 下に余白＝右下の地球ボタンと重ならないように */
     }
     .footer__inner { max-width: 1100px; margin: 0 auto; }
     /* 校章は学校名などの文字の上・中央。文字情報はすべて中央揃え */
@@ -604,7 +631,7 @@
     html[lang="en"] .title-vertical__sub  { font-size: clamp(0.8rem, min(3.6vw, 4vh), 1.5rem); margin-top: 0.5em; font-weight: 400; }   /* 英字は細いと写真の上で読みにくいので少し太く */
     /* 英語のサブタイトル（The 64th Cultural Festival）は長いので、狭いスマホでは「Scroll ↓」を少し上に上げて重ならないようにする */
     @media (max-width: 480px) {
-      html[lang="en"] .scroll-hint { bottom: calc(clamp(1rem, 4vh, 2.5rem) + 3.4rem); }
+      html[lang="en"] .scroll-hint { bottom: calc(100% - var(--vis-h, 100%) + clamp(1rem, 4vh, 2.5rem) + 3.4rem + env(safe-area-inset-bottom, 0px)); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -613,8 +640,8 @@
     }
 
     @media (max-width: 600px) {
-      .title-horizontal { left: 1rem; bottom: 1rem; }
-      .scroll-hint { bottom: 1rem; }
+      .title-horizontal { left: 1rem; bottom: calc(100% - var(--vis-h, 100%) + 1rem + env(safe-area-inset-bottom, 0px)); }
+      .scroll-hint { bottom: calc(100% - var(--vis-h, 100%) + 1rem + env(safe-area-inset-bottom, 0px)); }
       .carousel__btn { width: 2.3rem; height: 2.3rem; }
     }
   </style>
@@ -650,7 +677,7 @@
     <p class="title-horizontal" id="subtitle" data-i18n-html="subtitle">第64回<br>文化祭</p>
 
     <!-- スクロール案内（サブタイトル表示完了後に出現） -->
-    <button class="scroll-hint" id="scrollHint" type="button">Scroll <span>↓</span></button>
+    <button class="scroll-hint" id="scrollHint" type="button">Scroll<span aria-hidden="true">↓</span></button>
   </section>
 
   <!-- ==================================================
@@ -819,9 +846,9 @@
           // ▼ 有志発表の画像差し替え箇所（images/yushi/ファイル名.jpg を置くと自動表示）
           { name: "grows", yomi: "ぐろうず", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", en: { name: "grows", title: "Performing “LOVE2000” and “Touch”", text: "Hello! We're grows. This time we'll perform “LOVE2000” and “Touch.” We'll make it a live show enjoyable both for those feeling nostalgic and for those hearing the songs for the first time!" }, img: "" },
           { name: "GIRLs", yomi: "がるず", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", en: { name: "GIRLs", title: "Dance", text: "We'll come together with one heart to deliver the best stage! Please enjoy our smile-filled dancing and powerful performance until the very end." }, img: "" },
-          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープハイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", en: { name: "Kinmokusei (Osmanthus)", title: "Performing songs by Creep Pipe and aiko", text: "Hello! We are “Kinmokusei.” We'll play songs by Creep Pipe and aiko. Riding on the autumn breeze, we'll give our all to deliver our youth, so let's get excited together!!" }, img: "" },
+          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", en: { name: "Kinmokusei (Osmanthus)", title: "Performing songs by Creep Pipe and aiko", text: "Hello! We are “Kinmokusei.” We'll play songs by Creep Pipe and aiko. Riding on the autumn breeze, we'll give our all to deliver our youth, so let's get excited together!!" }, img: "" },
           { name: "SONMINS", yomi: "そんみんず", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", en: { name: "SONMINS", title: "Band", text: "Hello everyone, we are Sonmins (“The Villagers”). Following last year, we have the honor of performing on the festival stage again. We hope you enjoy it. Thank you!!" }, img: "" },
-          { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", en: { name: "Half past midnight", title: "Band", text: "Quiet in the classroom, loud on the stage: that's the kind of band we are. If you came to the festival, hear our sound before you go home. We turn fleeting youth into a booming roar that lasts a lifetime." }, img: "" },
+          { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", en: { name: "24:30", title: "Band", text: "Quiet in the classroom, loud on the stage: that's the kind of band we are. If you came to the festival, hear our sound before you go home. We turn fleeting youth into a booming roar that lasts a lifetime." }, img: "" },
           { name: "かにクラブ", yomi: "かにくらぶ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", en: { name: "Kani Club", title: "Manzai (Comedy Duo)", text: "We're Kani Club, finalists of High School Manzai 2026. Please watch over us warmly and laugh out loud for us." }, img: "" },
           { name: "いぬやさい", yomi: "いぬやさい", file: "inuyasai", title: "漫才", text: "お笑い好きの女子２人が、先輩コンビ「かにクラブ」に憧れて漫才に挑戦します。学校での漫才は初めてですが、果たしてどうなるのか。ぜひお楽しみください。", en: { name: "Inuyasai", title: "Manzai (Comedy Duo)", text: "Two girls who love comedy take on manzai, inspired by the senior duo “Kani Club.” It's our first manzai at school. How will it go? Please look forward to it." }, img: "" },
           { name: "ロングヘア", yomi: "ろんぐへあ", file: "longhair", title: "歌とギター", text: "名前はロングヘアですが、短い髪の2人が演奏します。こういう場で演奏するのははじめてなので、温かい目で見てください。", en: { name: "Long Hair", title: "Vocals and Guitar", text: "Our name is Long Hair, but the two of us who will perform have short hair. This is our first time performing at an event like this, so please watch with warm eyes." }, img: "" },
@@ -1476,8 +1503,8 @@
     });
 
     // ---------- 表示の組み立て ----------
-    // カードの枠は先に作り、画像は「画面の近くに来たとき」に読み込みます（初期表示を軽くするため）
-    buildCategories();
+    // 見出しボックス群（カルーセル）は、ここでは作りません。
+    // ファーストビューのタイトル表示が完了してから、loadContent()（下の「ヒーロー」の項）で作ります。
 
     // ---------- フッター（校章・リンクバナー） ----------
     // バナーのリンクを作る（画像は近くに来てから読み込む）
@@ -1574,14 +1601,33 @@
       setTimeout(titleFinished, 2500);                       // 念のための保険（フェードインは約1.3秒で終わる）
     }
 
-    // 縦書きタイトルの表示が完了した瞬間：スクロール解禁 ＋ サブタイトルと「Scroll ↓」を同時に表示
+    // 縦書きタイトルの表示が完了した瞬間：サブタイトルのスライドインを始め、下の見出しボックス群の読み込みに進む
     let titleDone = false;
     function titleFinished() {
       if (titleDone) return;
       titleDone = true;
-      document.documentElement.classList.remove("is-locked");   // スクロール解禁（以降は演出中もスクロール可能）
       hero.classList.add("is-title-done");                      // 横書きサブタイトルのスライドイン開始
-      showScrollHint();                                         // 「Scroll ↓」を表示
+      loadContent();                                            // ここから見出しボックス群の読み込み
+    }
+
+    // 見出しボックス群（食バザー・展示…のカルーセル）を作って、最初のカテゴリの画像を読み込む。
+    // 完了したら「Scroll」案内を表示し、スクロールを解禁する。
+    // （画像の読み込みが長引いても、5秒たったら先へ進みます）
+    function preloadImages(cat) {
+      const load = (src) => new Promise((resolve) => { const im = new Image(); im.onload = im.onerror = () => resolve(); im.src = src; });
+      return Promise.all(cat.items.map((it) => resolveItemImage(cat, it).then((src) => (src ? load(src) : null))));
+    }
+    async function loadContent() {
+      try {
+        buildCategories();                                       // 見出しボックス群を作る（描画）
+        await Promise.race([preloadImages(CATEGORIES[0]), new Promise((r) => setTimeout(r, 5000))]);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));   // 描画が済むのを待つ
+      } catch (e) { /* 失敗しても、スクロールできなくならないよう先へ進む */ }
+      loadFinished();
+    }
+    function loadFinished() {
+      document.documentElement.classList.remove("is-locked");   // スクロール解禁
+      showScrollHint();                                         // 大きな「Scroll」案内を表示
     }
 
     // 「Scroll ↓」：まだ一番上にいるときだけ表示。スクロールしたら消す
