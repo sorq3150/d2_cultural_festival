@@ -846,7 +846,7 @@
           // ▼ 有志発表の画像差し替え箇所（images/yushi/ファイル名.jpg を置くと自動表示）
           { name: "grows", yomi: "ぐろうず", file: "grows", title: "LOVE2000とタッチを披露", text: "こんにちは！growsです。今回はLOVE2000とタッチを披露します。懐かしさを感じる人も初めて聴く人も楽しめるライブにします！", en: { name: "grows", title: "Performing “LOVE2000” and “Touch”", text: "Hello! We're grows. This time we'll perform “LOVE2000” and “Touch.” We'll make it a live show enjoyable both for those feeling nostalgic and for those hearing the songs for the first time!" }, img: "" },
           { name: "GIRLs", yomi: "がるず", file: "girls", title: "ダンス", text: "私たちは、みんなで心を一つにして最高のステージを届けます！笑顔あふれるダンスと迫力のあるパフォーマンスを、ぜひ最後までお楽しみください。", en: { name: "GIRLs", title: "Dance", text: "We'll come together with one heart to deliver the best stage! Please enjoy our smile-filled dancing and powerful performance until the very end." }, img: "" },
-          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープハイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", en: { name: "Kinmokusei (Osmanthus)", title: "Performing songs by Creep Pipe and aiko", text: "Hello! We are “Kinmokusei.” We'll play songs by Creep Pipe and aiko. Riding on the autumn breeze, we'll give our all to deliver our youth, so let's get excited together!!" }, img: "" },
+          { name: "金木犀", yomi: "きんもくせい", file: "kinmokusei", title: "クリープパイプとaikoの曲を演奏", text: "こんにちは！“金木犀”です。クリープパイプとaikoの曲を演奏します。秋風に乗せて、私たちの青春を全力でお届けするので、一緒に盛り上がりましょう！！", en: { name: "Kinmokusei (Osmanthus)", title: "Performing songs by Creep Pipe and aiko", text: "Hello! We are “Kinmokusei.” We'll play songs by Creep Pipe and aiko. Riding on the autumn breeze, we'll give our all to deliver our youth, so let's get excited together!!" }, img: "" },
           { name: "SONMINS", yomi: "そんみんず", file: "sonmins", title: "バンド", text: "皆さんこんにちは村民ズです。昨年に引き続き文化祭ステージで演奏させていただくことになりました。楽しんでいただけたら幸いです。よろしくお願いします！！", en: { name: "SONMINS", title: "Band", text: "Hello everyone, we are Sonmins (“The Villagers”). Following last year, we have the honor of performing on the festival stage again. We hope you enjoy it. Thank you!!" }, img: "" },
           { name: "24時30分", yomi: "にじゅうよじさんじゅっぷん", file: "2430", title: "バンド", text: "教室では静かに、ステージではうるさく。そんなバンドです。文化祭に来たなら、俺たちの音を聴いてから帰ってください。一瞬で終わる青春を、一生残る爆音に。", en: { name: "Half past midnight", title: "Band", text: "Quiet in the classroom, loud on the stage: that's the kind of band we are. If you came to the festival, hear our sound before you go home. We turn fleeting youth into a booming roar that lasts a lifetime." }, img: "" },
           { name: "かにクラブ", yomi: "かにくらぶ", file: "kani-club", title: "漫才", text: "ハイスクールマンザイ２０２６ファイナリストのかにクラブと申します。どうか温かく見守って、大きな声で笑ってやってください。", en: { name: "Kani Club", title: "Manzai (Comedy Duo)", text: "We're Kani Club, finalists of High School Manzai 2026. Please watch over us warmly and laugh out loud for us." }, img: "" },
@@ -1591,6 +1591,38 @@
     // ヒーロー画像の読み込みが終わった（または失敗が確定した）ら解決される。団体画像の読み込みはこの後に始まる
     let heroReadyResolve;
     const heroReady = new Promise((resolve) => { heroReadyResolve = resolve; });
+
+    // ★初期表示画像の優先読み込み（Preload）
+    // 各カテゴリのカルーセルで「最初に画面内に出る画像」を、ヒーロー画像の読み込みが終わり次第、最優先で読み込んでおく。
+    // カルーセルは先頭（1枚目）が中央に来る配置なので、最初に見えるのは
+    //   PC　　：先頭を中心に左右2枚ずつ＝5枚（両端は見切れる）
+    //   スマホ：先頭を中心に左右1枚ずつ＝3枚（両端は見切れる）
+    // ループしているので、先頭の左側には末尾の団体が並びます。
+    function initialItems(cat) {
+      const n = cat.items.length;
+      const reach = window.innerWidth <= MOBILE_MAX_WIDTH ? 1 : 2;
+      const picked = [];
+      for (let k = -reach; k <= reach; k++) {
+        const it = cat.items[((k % n) + n) % n];
+        if (!picked.includes(it)) picked.push(it);
+      }
+      return picked;
+    }
+    function preloadInitialImages() {
+      const load = (src) => new Promise((resolve) => {
+        const im = new Image();
+        im.fetchPriority = "high";                              // 対応ブラウザでは、読み込みの優先度を高くする
+        im.decoding = "async";
+        im.onload = im.onerror = () => resolve();
+        im.src = src;                                           // 読み込んだ画像はブラウザに保存され、後でカードに表示するときにすぐ出る
+      });
+      const jobs = [];
+      CATEGORIES.forEach((cat) => initialItems(cat).forEach((it) => {
+        jobs.push(resolveItemImage(cat, it).then((src) => (src ? load(src) : null)));
+      }));
+      return Promise.all(jobs);
+    }
+    const initialImagesReady = heroReady.then(preloadInitialImages);   // ヒーロー画像の読み込み後、すぐ開始
     let heroStarted = false;
     function startHeroAnimation() {
       if (heroStarted) return;
@@ -1610,19 +1642,16 @@
       loadContent();                                            // ここから見出しボックス群の読み込み
     }
 
-    // 見出しボックス群（食バザー・展示…のカルーセル）を作って、最初のカテゴリの画像を読み込む。
-    // 完了したら「Scroll」案内を表示し、スクロールを解禁する。
-    // （画像の読み込みが長引いても、5秒たったら先へ進みます）
-    function preloadImages(cat) {
-      const load = (src) => new Promise((resolve) => { const im = new Image(); im.onload = im.onerror = () => resolve(); im.src = src; });
-      return Promise.all(cat.items.map((it) => resolveItemImage(cat, it).then((src) => (src ? load(src) : null))));
-    }
+    // タイトル表示が終わったら、見出しボックス群（食バザー・展示…のカルーセル）を作る。
+    // そのうえで、初期表示画像（上の initialImagesReady）の読み込みが済むのを待ち、
+    // 「タイトル表示」と「初期表示画像の読み込み」の両方が完了した段階で、Scroll案内の表示とスクロール解禁を行う。
+    // （画像の読み込みが長引いても、6秒たったら先へ進みます）
     async function loadContent() {
       try {
         buildCategories();                                       // 見出しボックス群を作る（描画）
-        await Promise.race([preloadImages(CATEGORIES[0]), new Promise((r) => setTimeout(r, 5000))]);
+        await Promise.race([initialImagesReady, new Promise((r) => setTimeout(r, 6000))]);
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));   // 描画が済むのを待つ
-      } catch (e) { /* 失敗しても、スクロールできなくならないよう先へ進む */ }
+      } catch (e) { /* 失敗しても、スクロールできなくなることはない */ }
       loadFinished();
     }
     function loadFinished() {
